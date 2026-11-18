@@ -1050,10 +1050,16 @@ async function readCvFile(file){
     await loadScript("vendor/pdf.min.js");const lib=window.pdfjsLib;lib.GlobalWorkerOptions.workerSrc="vendor/pdf.worker.min.js";
     const pdf=await lib.getDocument({data:await file.arrayBuffer()}).promise;let out=[];
     for(let p=1;p<=pdf.numPages;p++){
-      const tc=await (await pdf.getPage(p)).getTextContent();const rows={};
-      tc.items.forEach(it=>{if(!it.str)return;const y=Math.round(it.transform[5]/3)*3;(rows[y]=rows[y]||[]).push(it)});
-      Object.keys(rows).map(Number).sort((a,b)=>b-a).forEach(y=>out.push(rows[y].sort((a,b)=>a.transform[4]-b.transform[4]).map(i=>i.str).join(" ").replace(/\s+/g," ").trim()));
-      out.push("");
+      const tc=await (await pdf.getPage(p)).getTextContent();
+      let line="",ly=null,lx=null;
+      const flush=()=>{if(line.trim())out.push(line.replace(/\s+/g," ").trim());line="";lx=null};
+      tc.items.forEach(it=>{
+        const y=it.transform[5],x=it.transform[4];
+        if(ly!==null&&Math.abs(y-ly)>2&&it.str)flush();
+        if(it.str){if(line&&lx!==null&&x-lx>1&&!/\s$/.test(line)&&!/^\s/.test(it.str))line+=" ";line+=it.str;lx=x+(it.width||0);ly=y}
+        if(it.hasEOL)flush();
+      });
+      flush();out.push("");
     }
     return out.join("\n");
   }
@@ -1085,7 +1091,7 @@ const HEAD={summary:/^(professional |career |personal )?(summary|profile|objecti
  edu:/^(education|qualifications?|academic|educational)\b/i,
  certs:/^(certificates?|certifications?|courses|training|short courses|achievements|awards)\b/i,
  lang:/^languages?\b/i, refs:/^(references?|referees)\b/i,
- personal:/^(personal (details|information|particulars)|contact( details| information)?|details)\b/i,
+ personal:/^(personal (details|information|particulars)|contact( details| information)?|details|additional information|other information|other details)\b/i,
  drop:/^(hobbies|interests|hobbies and interests|declaration)\b/i};
 function sectionOf(line){if(/:\s*\S/.test(line))return null;const l=line.replace(/[:\-–_*#]+$/,"").trim();if(l.length>45)return null;for(const k in HEAD)if(HEAD[k].test(l))return k;return null}
 function parseCv(raw){
@@ -1101,7 +1107,7 @@ function parseCv(raw){
   if(nameLine)out.name=nameLine.replace(/^(name|full names?)\s*:?\s*/i,"").replace(/\b\w/g,c=>c.toUpperCase()).replace(/\B\w+/g,w=>w.toLowerCase());
   // personal details: keep useful, drop private
   const priv=[];
-  (sec.top||[]).concat(sec.personal||[]).forEach(l=>{
+  (sec.top||[]).concat(sec.personal||[]).forEach(l0=>{const l=l0.replace(/^[•●▪◦\-–—*·>]\s*/,"");
     if(/\b(id|identity)\s*(no|number)|\b\d{13}\b/i.test(l))priv.push("ID number");
     else if(/marital|married|single\b/i.test(l))priv.push("marital status");
     else if(/religion|church denomination/i.test(l))priv.push("religion");
@@ -1120,35 +1126,58 @@ function parseCv(raw){
   if(!sum){const long=(sec.top||[]).filter(l=>l.length>80);if(long.length)sum=long.join(" ")}
   out.summary=polishText(sum.replace(/^\s*I\s+am\s+a\s+/i,"A "),log);
   // skills
-  const sk=[];(sec.skills||[]).forEach(l=>l.split(/[,;|•●▪]|\s{2,}/).forEach(x=>{x=x.replace(/^[\s\-–*·>]+/,"").replace(/[.]$/,"").trim();if(x.length>=2&&x.length<=45)sk.push(polishText(x,log))}));
+  const sk=[];(sec.skills||[]).forEach(l=>l.replace(/^[\s•●▪◦\-–—*·>]+/,"").replace(/^[A-Za-z][A-Za-z &\/\-]{1,28}:\s*/,"").split(/[,;|•●▪]|\s{2,}/).forEach(x=>{x=x.replace(/^[\s\-–*·>]+/,"").replace(/[.]$/,"").trim();if(x.length>=2&&x.length<=45)sk.push(polishText(x,log))}));
   const seen=new Set();out.skills=sk.filter(x=>{const k=x.toLowerCase();if(seen.has(k))return false;seen.add(k);return true}).map(x=>x[0].toUpperCase()+x.slice(1)).join(", ");
   // experience
+  const isBullet=l=>/^[•●▪◦\-–—*·>]/.test(l);
+  const E=sec.exp||[];const hasBullets=E.some(isBullet);
   let curE=null,pending=[];
-  (sec.exp||[]).forEach(l=>{
-    const m=l.match(DATE_RE);const bullet=/^[•●▪◦\-–—*·>]/.test(l);
-    if(m&&!bullet){
-      let head=l.replace(m[0],"").replace(/[|,(\[\]]+\s*$/,"").replace(/^\s*[|,)\]-]+/,"").trim();
-      if(!head&&pending.length)head=pending.join(" | ");else if(head&&pending.length)head=pending.join(" | ")+" | "+head;
-      const parts=head.split(/\s+at\s+|\s*\|\s*|\s+[-–—]\s+|,\s*/).filter(Boolean);
-      curE={title:polishText(parts[0]||"",log),org:polishText(parts[1]||"",log),place:polishText(parts[2]||"",log),start:m[1].replace(/\b\w/,c=>c.toUpperCase()),end:/present|current|now|date/i.test(m[2])?"Present":m[2].replace(/\b\w/,c=>c.toUpperCase()),duties:[]};
-      out.exp.push(curE);pending=[];return}
-    if(curE&&(bullet||l.length>55||curE.duties.length===0&&pending.length===0&&/^[a-z]/.test(l))){curE.duties.push(polishDuty(l,log));return}
-    if(curE&&curE.duties.length&&!bullet&&l.length<=55){pending.push(l);return}
-    if(!curE)pending.push(l);else curE.duties.push(polishDuty(l,log));
+  const ends=s=>/[.!?:;]$/.test(s.trim());
+  E.forEach((l,i)=>{
+    const m=l.match(DATE_RE);const b=isBullet(l);const next=E[i+1]||"";
+    if(m&&!b){
+      let head=l.replace(m[0],"").replace(/[|,(\[\]\s]+$/,"").replace(/^[\s|,)\]-]+/,"").trim();
+      const hdr=pending.join(" | ");pending=[];
+      // header line holds "Title, Company"; the date line often holds the town
+      let title="",org="",place="";
+      const split=s=>s.split(/\s+at\s+|\s*\|\s*|\s+[-–—]\s+|,\s*/).map(x=>x.trim()).filter(Boolean);
+      if(hdr){const p=split(hdr);title=p[0]||"";org=p[1]||"";place=p.slice(2).concat(head?split(head):[]).join(", ")}
+      else{const p=split(head);title=p[0]||"";org=p[1]||"";place=p.slice(2).join(", ")}
+      curE={title:polishText(title,log),org:polishText(org,log),place:polishText(place,log),start:m[1].replace(/\b\w/,c=>c.toUpperCase()),end:/present|current|now|date/i.test(m[2])?"Present":m[2].replace(/\b\w/,c=>c.toUpperCase()),duties:[]};
+      out.exp.push(curE);return}
+    if(b){if(!curE){curE={title:"",org:"",place:"",start:"",end:"",duties:[]};out.exp.push(curE)}curE.duties.push(l.replace(/^[•●▪◦\-–—*·>\s]+/,""));return}
+    // not a bullet, no date: a job header if the next line carries the dates
+    if(next.match(DATE_RE)&&!isBullet(next)){pending.push(l);return}
+    if(curE&&curE.duties.length){
+      const last=curE.duties.length-1;
+      if(hasBullets||/^[a-z0-9(~]/.test(l)||!ends(curE.duties[last])){curE.duties[last]+=" "+l;return}
+      curE.duties.push(l);return}
+    if(curE){curE.duties.push(l);return}
+    pending.push(l);
   });
-  if(!out.exp.length&&(sec.exp||[]).length){out.exp.push({title:"",org:"",place:"",start:"",end:"",duties:(sec.exp||[]).map(l=>polishDuty(l,log))});log.warn.push("Couldn’t find dates in your work experience. Check the job title, company and dates in step 1.")}
-  out.exp=out.exp.map(e=>({title:e.title,org:e.org,place:e.place,start:e.start,end:e.end,duties:e.duties.filter(Boolean).join("\n")}));
+  out.exp=out.exp.map(e=>({title:e.title,org:e.org,place:e.place,start:e.start,end:e.end,duties:e.duties.map(d=>polishDuty(d,log)).filter(Boolean).join("\n")}));
+  if(!out.exp.length&&E.length){out.exp.push({title:"",org:"",place:"",start:"",end:"",duties:E.map(l=>polishDuty(l,log)).join("\n")});log.warn.push("Couldn’t find dates in your work experience. Check the job title, company and dates in step 1.")}
+  out.exp.forEach(e=>{if(!e.title)log.warn.push("One job has no title. Add it in step 1.")});
   // education
+  const INST=/\b(university|college|school|institute|academy|tvet|technikon|campus|unisa)\b/i;
   (sec.edu||[]).forEach(l=>{
-    const clean=l.replace(/^[•●▪◦\-–—*·>]\s*/,"");const yr=(clean.match(/\b(19|20)\d{2}\b(?!.*\b(19|20)\d{2}\b)/)||[""])[0];
-    let rest=clean.replace(DATE_RE,"").replace(new RegExp("\\b"+yr+"\\b"),"").replace(/\s*(year obtained|completed|obtained)\s*:?/i,"").replace(/[|,(\[\]\-–]+\s*$/,"").trim();
+    const clean=l.replace(/^[•●▪◦\-–—*·>]\s*/,"");
+    const yr=(clean.match(/\b(19|20)\d{2}\b(?!.*\b(19|20)\d{2}\b)/)||[""])[0];
+    let rest=clean.replace(DATE_RE,"").replace(new RegExp("(\\b"+MON+"\\s+)?\\b"+(yr||"9999")+"\\b","i"),"").replace(/\s*(year obtained|completed|obtained)\s*:?/i,"").replace(/[|,(\[\]\-–\s]+$/,"").replace(/^[|,\s]+/,"").trim();
     if(!rest)return;
-    const parts=rest.split(/\s*\|\s*|\s+[-–—]\s+|,\s*|\s+at\s+/).filter(Boolean);
-    if(out.edu.length&&!yr&&parts.length===1&&!out.edu[out.edu.length-1].inst){out.edu[out.edu.length-1].inst=polishText(parts[0],log);return}
-    out.edu.push({qual:polishText(parts[0],log),inst:polishText(parts.slice(1).join(", "),log),year:yr});
+    let parts=rest.split(/\s*\|\s*|\s+[-–—]\s+|\s+at\s+/).filter(Boolean);
+    if(parts.length===1&&/,/.test(parts[0])){const c=parts[0].split(/,\s*/);const k=c.findIndex(x=>INST.test(x));if(k>0)parts=[c.slice(0,k).join(", "),c.slice(k).join(", ")]}
+    const last=out.edu[out.edu.length-1];
+    // a line naming the school or university belongs to the qualification above it
+    if(last&&!last.inst&&!yr&&INST.test(parts[0])){last.inst=polishText(parts[0],log);return}
+    if(last&&last.inst&&!yr&&!INST.test(parts[0])&&parts.length===1&&parts[0].length<40){return}
+    let qual=parts[0],inst=parts.slice(1).find(p=>INST.test(p))||"";
+    if(!inst&&INST.test(qual)&&parts[1]){inst=qual;qual=parts[1]}
+    out.edu.push({qual:polishText(qual,log),inst:polishText(inst,log),year:yr});
   });
   // certificates, languages, references
   out.certs=(sec.certs||[]).map(l=>polishText(l.replace(/^[•●▪◦\-–—*·>]\s*/,""),log)).join("\n");
+  (sec.personal||[]).concat(sec.top||[]).forEach(l=>{const c=l.replace(/^[•●▪◦\-–—*·>]\s*/,"");if(/^languages?\s*:/i.test(c)&&!out.languages)out.languages=polishText(c.replace(/^languages?\s*:\s*/i,""),log)});
   if(!out.languages&&sec.lang)out.languages=polishText(sec.lang.join(", ").replace(/[•●▪]/g,""),log);
   const refs=(sec.refs||[]).filter(l=>!/available\s+(on|upon)\s+request/i.test(l));
   out.refs=refs.length?refs.join("\n"):"Available on request";
