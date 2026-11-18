@@ -163,6 +163,9 @@ textarea{min-height:84px;resize:vertical}
 .report ul{margin:6px 0 10px 18px;padding:0}
 .report li{margin-bottom:3px}
 .report .warn{color:var(--bad)}
+.report .found{margin:6px 0 10px;padding:8px 12px;border-radius:8px;background:var(--brand-pale);font-size:.9rem}
+.report .found p{margin:2px 0}
+input.flagged,textarea.flagged{border-color:var(--bad);box-shadow:0 0 0 2px rgba(179,38,30,.15)}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);
   padding:10px 16px;border-radius:10px;font-size:.92rem;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
 .toast.show{opacity:1}
@@ -1131,7 +1134,7 @@ function parseCv(raw){
   // experience
   const isBullet=l=>/^[•●▪◦\-–—*·>]/.test(l);
   const E=sec.exp||[];const hasBullets=E.some(isBullet);
-  let curE=null,pending=[];
+  let curE=null,pending=[],lastLen=0;const maxLen=Math.max(40,...E.map(x=>x.length));
   const ends=s=>/[.!?:;]$/.test(s.trim());
   E.forEach((l,i)=>{
     const m=l.match(DATE_RE);const b=isBullet(l);const next=E[i+1]||"";
@@ -1145,14 +1148,15 @@ function parseCv(raw){
       else{const p=split(head);title=p[0]||"";org=p[1]||"";place=p.slice(2).join(", ")}
       curE={title:polishText(title,log),org:polishText(org,log),place:polishText(place,log),start:m[1].replace(/\b\w/,c=>c.toUpperCase()),end:/present|current|now|date/i.test(m[2])?"Present":m[2].replace(/\b\w/,c=>c.toUpperCase()),duties:[]};
       out.exp.push(curE);return}
-    if(b){if(!curE){curE={title:"",org:"",place:"",start:"",end:"",duties:[]};out.exp.push(curE)}curE.duties.push(l.replace(/^[•●▪◦\-–—*·>\s]+/,""));return}
+    if(b){if(!curE){curE={title:"",org:"",place:"",start:"",end:"",duties:[]};out.exp.push(curE)}curE.duties.push(l.replace(/^[•●▪◦\-–—*·>\s]+/,""));lastLen=l.length;return}
     // not a bullet, no date: a job header if the next line carries the dates
     if(next.match(DATE_RE)&&!isBullet(next)){pending.push(l);return}
     if(curE&&curE.duties.length){
       const last=curE.duties.length-1;
-      if(hasBullets||/^[a-z0-9(~]/.test(l)||!ends(curE.duties[last])){curE.duties[last]+=" "+l;return}
-      curE.duties.push(l);return}
-    if(curE){curE.duties.push(l);return}
+      const prevShort=lastLen<0.75*maxLen;
+      if(hasBullets||/^[a-z0-9(~]/.test(l)||(!ends(curE.duties[last])&&!(/^[A-Z]/.test(l)&&prevShort))){curE.duties[last]+=" "+l;lastLen=l.length;return}
+      curE.duties.push(l);lastLen=l.length;return}
+    if(curE){curE.duties.push(l);lastLen=l.length;return}
     pending.push(l);
   });
   out.exp=out.exp.map(e=>({title:e.title,org:e.org,place:e.place,start:e.start,end:e.end,duties:e.duties.map(d=>polishDuty(d,log)).filter(Boolean).join("\n")}));
@@ -1193,7 +1197,51 @@ function parseCv(raw){
   out.level=/\b(honours|master|phd|postgraduate)\b/.test(all)?"6":/\b(degree|bachelor|bsc|bcom|b\.com|ba |llb|b\.ed|btech|beng)\b/.test(all)?"5":/\bdiploma\b/.test(all)?"4":/\b(n[4-6]|nc\(v\)|ncv|higher certificate)\b/.test(all)?"3":/\b(matric|grade 12|national senior certificate|nsc)\b/.test(all)?"2":"";
   return {out,log};
 }
-let pendingImport=null;
+let pendingImport=null,undoState=null;
+/* Catch words that landed in the wrong place, tidy what is safe, flag the rest */
+function sanity(res){
+  const o=res.out,log=res.log,flags=[];
+  const bad=s=>{s=String(s||"").trim();if(!s)return "";if(/^[a-z]/.test(s))return "starts mid-sentence";if(/[.;,]$/.test(s))return "ends like a sentence";if(/%|~|\d+\+/.test(s))return "looks like part of a bullet point";if(s.length>60)return "is very long";return ""};
+  const ROLE=/\b(developer|engineer|manager|assistant|clerk|officer|intern|tutor|teacher|nurse|technician|analyst|consultant|administrator|supervisor|cashier|agent|worker|practitioner|coordinator)\b/i;
+  o.exp.forEach((e,i)=>{
+    const n=`Job ${i+1}`;
+    if(!e.title)flags.push({list:"exp",i,f:"title",msg:`${n} has no job title.`});
+    else{const w=bad(e.title);if(w)flags.push({list:"exp",i,f:"title",msg:`${n}: the job title “${e.title.slice(0,40)}” ${w}. It may be text from a bullet point.`})}
+    const wo=bad(e.org);if(wo)flags.push({list:"exp",i,f:"org",msg:`${n}: the company “${e.org.slice(0,40)}” ${wo}.`});
+    if(e.place&&ROLE.test(e.place)&&!ROLE.test(e.title)){flags.push({list:"exp",i,f:"place",msg:`${n}: “${e.place}” looks like a job title, not a town.`})}
+    if(!e.start)flags.push({list:"exp",i,f:"start",msg:`${n} has no start date.`});
+    const frag=e.duties.split("\n").filter(d=>d&&(/^[a-z]/.test(d)||d.length<15));
+    if(frag.length)flags.push({list:"exp",i,f:"duties",msg:`${n}: ${frag.length} dut${frag.length===1?"y looks":"ies look"} cut off (for example “${frag[0].slice(0,35)}”).`});
+  });
+  // education: merge a stray institution row into the qualification above it
+  const INST=/\b(university|college|school|institute|academy|tvet|technikon|campus|unisa)\b/i;
+  const isQual=s=>/(diploma|degree|certificate|bachelor|matric|grade|\bn\d\b|honours|master|nsc|senior certificate)/i.test(s);
+  o.edu.forEach((e,i,a)=>{const nx=a[i+1];if(INST.test(e.qual)&&!isQual(e.qual)&&!e.year&&nx&&!nx.inst&&isQual(nx.qual)){nx.inst=e.qual;e._drop=true;log.notes.push("Joined a school or university name to its qualification.")}});
+  o.edu=o.edu.filter(e=>!e._drop);
+  o.edu=o.edu.filter((e,i,a)=>{
+    if(INST.test(e.qual)&&i>0){const p=a[i-1];if(!p.inst){p.inst=e.qual;log.notes.push("Joined a school or university name to the qualification above it.");return false}
+      if(p.inst.toLowerCase()===e.qual.toLowerCase()){return false}}
+    return true});
+  o.edu.forEach((e,i)=>{
+    if(INST.test(e.qual)&&!/(diploma|degree|certificate|bachelor|matric|grade|n\d|honours|master)/i.test(e.qual))flags.push({list:"edu",i,f:"qual",msg:`Education ${i+1}: “${e.qual}” looks like a school name, not a qualification.`});
+    if(!e.year)flags.push({list:"edu",i,f:"year",msg:`Education ${i+1} has no year.`});
+  });
+  // skills: drop category labels
+  const sk=o.skills.split(", ").map(s=>s.replace(/^[A-Za-z][A-Za-z &\/\-]{1,28}:\s*/,"")).filter(Boolean);
+  if(sk.join(", ")!==o.skills){o.skills=sk.join(", ");log.notes.push("Removed category labels like “Front-End:” from your skills.")}
+  // certificates: move personal lines out
+  const keep=[];o.certs.split("\n").forEach(l=>{
+    if(/^languages?\s*:/i.test(l)){if(!o.languages)o.languages=l.replace(/^languages?\s*:\s*/i,"");return}
+    if(/^(availability|citizenship|nationality|id( number)?|identity|marital|gender|religion|date of birth|additional information)\b/i.test(l)||/\b\d{13}\b/.test(l))return;
+    keep.push(l)});
+  if(keep.length!==o.certs.split("\n").filter(Boolean).length){o.certs=keep.join("\n");log.notes.push("Moved personal details out of your certificates.")}
+  res.flags=flags;return res;
+}
+function markFlags(flags){
+  document.querySelectorAll(".flagged").forEach(x=>x.classList.remove("flagged"));
+  (flags||[]).forEach(fl=>{const item=document.querySelectorAll(`#${fl.list==="exp"?"expList":"eduList"} .item`)[fl.i];const el=item&&item.querySelector(`[data-f="${fl.f}"]`);
+    if(el){el.classList.add("flagged");el.title=fl.msg;el.addEventListener("input",()=>{el.classList.remove("flagged");el.title=""},{once:true})}});
+}
 function hasData(){return !!(S.name.trim()||S.summary.trim()||S.skills.trim()||S.exp.some(e=>e.title||e.org))}
 function showReport(res,confirm){
   const {log,out}=res;const R=$("#importReport");
@@ -1205,23 +1253,27 @@ function showReport(res,confirm){
   if(log.firstPerson)items.push(`Started ${log.firstPerson} dut${log.firstPerson===1?"y":"ies"} with an action word instead of “I”`);
   items.push(`Found ${out.exp.length} job${out.exp.length===1?"":"s"}, ${out.edu.length} qualification${out.edu.length===1?"":"s"} and ${out.skills?out.skills.split(", ").length:0} skills.`);
   log.notes.forEach(n=>items.push(esc(n)));
-  R.innerHTML=`<div class="report"><strong>${confirm?"Ready to fill in your details":"Your CV has been polished"}</strong><ul>${items.map(i=>`<li>${i}</li>`).join("")}</ul>
-    ${log.warn.length?`<strong class="warn">Please check</strong><ul>${log.warn.map(w=>`<li class="warn">${esc(w)}</li>`).join("")}</ul>`:""}
-    ${confirm?`<p>This will replace what’s already in the form.</p><div class="btns"><button class="btn small" type="button" id="impYes">Replace my details</button><button class="btn ghost small" type="button" id="impNo">Cancel</button></div>`:`<p>Now read through every field below. Words your phone underlines in red may still need fixing.</p>`}</div>`;
+  const found=`<div class="found"><strong>What we found</strong>${out.exp.map(e=>`<p>${esc(e.title||"(no title)")}${e.org?" at "+esc(e.org):""}${e.start?` (${esc(e.start)} – ${esc(e.end||"")})`:""}</p>`).join("")}${out.edu.map(e=>`<p>${esc(e.qual)}${e.inst?", "+esc(e.inst):""}${e.year?" "+esc(e.year):""}</p>`).join("")}</div>`;
+  const warns=log.warn.concat((res.flags||[]).map(f=>f.msg));
+  R.innerHTML=`<div class="report"><strong>${confirm?"Ready to fill in your details":"Your CV has been polished"}</strong><ul>${items.map(i=>`<li>${i}</li>`).join("")}</ul>${found}
+    ${warns.length?`<strong class="warn">Please check (marked in red below)</strong><ul>${warns.map(w=>`<li class="warn">${esc(w)}</li>`).join("")}</ul>`:`<p style="color:var(--good)">Everything landed in the right place.</p>`}
+    ${confirm?`<p>This will replace what’s already in the form.</p><div class="btns"><button class="btn small" type="button" id="impYes">Replace my details</button><button class="btn ghost small" type="button" id="impNo">Cancel</button></div>`:`<p>Read through every field below. Words your phone underlines in red may still need fixing.</p><div class="btns"><button class="btn ghost small" type="button" id="impUndo">Undo this upload</button></div>`}</div>`;
   if(confirm){$("#impYes").onclick=()=>applyImport(pendingImport);$("#impNo").onclick=()=>{pendingImport=null;R.innerHTML=""}}
+  else $("#impUndo").onclick=()=>{if(!undoState)return;S=undoState;undoState=null;save();document.querySelectorAll("[data-k]").forEach(el=>el.value=S[el.dataset.k]||"");drawLists();fillQual();R.innerHTML="";toast("Upload undone. Your previous details are back.")};
 }
 function applyImport(res){
+  undoState=JSON.parse(JSON.stringify(S));
   const o=res.out;
   ["name","phone","email","location","licence","languages","summary","skills","certs","refs"].forEach(k=>S[k]=o[k]||"");
   S.exp=o.exp.length?o.exp:[{title:"",org:"",place:"",start:"",end:"",duties:""}];
   S.edu=o.edu.length?o.edu:[{qual:"",inst:"",year:""}];
   if(o.level&&S.level===""){S.level=o.level;res.log.notes.push(`Set your highest education to ${LEVELS[+o.level]}. Change it if that’s wrong.`)}
   save();document.querySelectorAll("[data-k]").forEach(el=>el.value=S[el.dataset.k]||"");drawLists();fillQual();
-  pendingImport=null;showReport(res,false);toast("CV polished. Check your details.");
+  pendingImport=null;showReport(res,false);markFlags(res.flags);toast(res.flags&&res.flags.length?"CV polished. Check the fields marked in red.":"CV polished. Check your details.");
 }
 function handleText(raw){
   if(!raw||raw.replace(/\s/g,"").length<60){$("#importReport").innerHTML=`<div class="report warn">We couldn’t read enough text. If your CV is a photo or a scanned page, paste or type the text instead.</div>`;return}
-  const res=parseCv(raw);
+  const res=sanity(parseCv(raw));
   if(hasData()){pendingImport=res;showReport(res,true)}else applyImport(res);
 }
 $("#cvPick").onclick=()=>$("#cvFile").click();

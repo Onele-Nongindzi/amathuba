@@ -1,6 +1,6 @@
 // Amathuba offline support: caches the app so it opens without data after the first visit.
 // Change VERSION whenever you update any file, so phones fetch the new version.
-const VERSION = "amathuba-v19";
+const VERSION = "amathuba-v20";
 const FILES = ["./", "index.html", "js/opportunities.js", "js/towns.js", "data/local-opportunities.json", "vendor/jspdf.umd.min.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener("activate", e => {
@@ -14,7 +14,12 @@ self.addEventListener("fetch", e => {
     e.respondWith(fetch(e.request).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put(e.request, copy)); return res; }).catch(() => caches.match(e.request)));
     return;
   }
-  // Cache first to save mobile data; refresh the cache quietly in the background.
+  // The page itself: get the newest version when online, so updates show straight away.
+  if (e.request.mode === "navigate") {
+    e.respondWith(fetch(e.request).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put(e.request, copy)); return res; }).catch(() => caches.match(e.request).then(r => r || caches.match("index.html"))));
+    return;
+  }
+  // Everything else: cache first to save mobile data; refresh the cache quietly in the background.
   e.respondWith(caches.open(VERSION).then(async c => {
     const hit = await c.match(e.request);
     const net = fetch(e.request).then(res => { if (res.ok) c.put(e.request, res.clone()); return res; }).catch(() => null);
