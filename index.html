@@ -154,6 +154,11 @@ textarea{min-height:84px;resize:vertical}
 .local h4{margin:0 0 2px;font-size:1rem}
 .local p{margin:2px 0;font-size:.92rem;color:var(--soft)}
 .local .soon{color:var(--bad);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{font:inherit;font-size:.85rem;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:20px;padding:5px 12px;cursor:pointer}
+.chips button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.multi{display:inline-flex;align-items:center;gap:4px;font-size:.85rem;color:var(--soft)}
+.multi a{padding:3px 8px!important}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);
   padding:10px 16px;border-radius:10px;font-size:.92rem;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
 .toast.show{opacity:1}
@@ -314,6 +319,8 @@ textarea{min-height:84px;resize:vertical}
       <label class="sr-only" for="areaProv">Province</label>
       <select id="areaProv" style="width:auto"><option value="">Choose province…</option></select>
     </div>
+    <p style="margin:12px 0 6px;font-weight:600;color:var(--ink);font-size:.93rem">Show opportunities in <span style="font-weight:400;color:var(--soft)">(choose one or more)</span></p>
+    <div class="chips" id="provChips" role="group" aria-label="Provinces to show"></div>
     <p class="hint" style="margin:8px 0 0;font-size:.85rem">Your location is only used on this phone to find your nearest town. It is never sent to anyone.</p>
   </div>
   <div id="localWrap"></div>
@@ -660,7 +667,6 @@ $("#copyTxt").onclick=async()=>{
 const AGE={u18:0,"18":1,"25":2,"35":3};
 const OPPS=window.AMATHUBA_OPPS||[];
 const enc=encodeURIComponent;
-let searchLoc="ec";
 const provSlug=p=>p.toLowerCase().replace(/[^a-z]+/g,"-");
 function oppCard(o){return `<div class="opp"><h4>${esc(o.t)}</h4><p>${esc(o.d)}</p><a href="${o.u}" target="_blank" rel="noopener noreferrer">${esc(o.u.replace(/^https:\/\/(www\.)?/,"").replace(/\/$/,""))}</a><button type="button" class="trackbtn" data-track-t="${esc(o.t)}" data-track-u="${esc(o.u)}">Track this</button></div>`}
 function renderOpps(){
@@ -673,27 +679,21 @@ function renderOpps(){
   const titles=isQual?(info.titles[lv>=5?"deg":lv===4?"dip":"cert"]||[]):(info.titles[lv<=1?0:1]||[]);
   let rh="";
   if(titles.length){
-    const ec=searchLoc==="ec";
-    let AR={};try{AR=JSON.parse(localStorage.getItem("amathuba-area")||"{}")}catch(e){}
-    const PV=AR.province||"Eastern Cape";
+    const PL=SEL.length?SEL:[null];
     const slug=t=>t.toLowerCase().replace(/[’']/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
-    const link=(u,l)=>`<a href="${u}" target="_blank" rel="noopener noreferrer">${l}</a>`;
+    const link=(u,l,title)=>`<a href="${u}" target="_blank" rel="noopener noreferrer"${title?` title="${esc(title)}"`:""}>${l}</a>`;
+    const site=(name,fn)=>PL.length===1?link(fn(PL[0]),name):`<span class="multi">${name}:${PL.map(p=>link(fn(p),ABBR[p],p)).join("")}</span>`;
     const rows=titles.slice(0,4).map(t=>{
       const L=[
-        link(`https://www.pnet.co.za/jobs/${slug(t)}${ec?"/in-"+provSlug(PV):""}`,"Pnet"),
-        link(`https://za.indeed.com/jobs?q=${enc(t)}&l=${enc(ec?PV:"South Africa")}`,"Indeed"),
-        link(`https://www.google.com/search?q=${enc("site:graduates24.com "+t+(ec?" "+PV:""))}`,"Graduates24")];
-      if(lv>=3)L.push(link(`https://www.linkedin.com/jobs/search/?keywords=${enc(t)}&location=${enc(ec?PV+", South Africa":"South Africa")}`,"LinkedIn"));
+        site("Pnet",p=>`https://www.pnet.co.za/jobs/${slug(t)}${p?"/in-"+provSlug(p):""}`),
+        site("Indeed",p=>`https://za.indeed.com/jobs?q=${enc(t)}&l=${enc(p||"South Africa")}`),
+        site("Graduates24",p=>`https://www.google.com/search?q=${enc("site:graduates24.com "+t+(p?" "+p:""))}`)];
+      if(lv>=3)L.push(site("LinkedIn",p=>`https://www.linkedin.com/jobs/search/?keywords=${enc(t)}&location=${enc(p?p+", South Africa":"South Africa")}`));
       return `<div class="srow"><strong>${esc(t)}</strong><span>${L.join("")}</span></div>`}).join("");
     rh=`<h3>Jobs that match your ${isQual?"qualification":"level"}</h3>
-    <div class="opp"><h4>See live job listings</h4><p>Each link opens today’s adverts for that job.</p>
-      <div class="seg" role="group" aria-label="Where to search">
-        <button type="button" data-loc="ec" aria-pressed="${ec}">${esc(PV)}</button>
-        <button type="button" data-loc="sa" aria-pressed="${!ec}">All of South Africa</button>
-      </div>${rows}</div>`;
+    <div class="opp"><h4>See live job listings</h4><p>Each link opens today’s adverts for that job in ${SEL.length?esc(SEL.join(", ").replace(/, ([^,]*)$/," and $1")):"all of South Africa"}. Change the provinces in “Your area” above.</p>${rows}</div>`;
   }
   $("#rolesWrap").innerHTML=rh;
-  document.querySelectorAll("[data-loc]").forEach(btn=>btn.onclick=()=>{searchLoc=btn.dataset.loc;renderOpps()});
   let AP="";try{AP=(JSON.parse(localStorage.getItem("amathuba-area")||"{}").province)||""}catch(e){}
   const fits=o=>o.levels.includes(lv)&&o.ages.includes(ag)&&(!o.prov||!AP||o.prov===AP)&&(!o.notProv||!AP||o.notProv!==AP);
   const specific=OPPS.filter(o=>o.quals&&o.quals.includes(q)&&fits(o));
@@ -967,16 +967,27 @@ const PROVS=["Eastern Cape","Free State","Gauteng","KwaZulu-Natal","Limpopo","Mp
 const TOWNS=window.AMATHUBA_TOWNS||[];
 let AREA={};try{AREA=JSON.parse(localStorage.getItem("amathuba-area")||"{}")}catch(e){AREA={}}
 const saveArea=()=>{try{localStorage.setItem("amathuba-area",JSON.stringify(AREA))}catch(e){}};
-let localProv=AREA.province||"all";
+const ABBR={"Eastern Cape":"EC","Free State":"FS","Gauteng":"GP","KwaZulu-Natal":"KZN","Limpopo":"LP","Mpumalanga":"MP","Northern Cape":"NC","North West":"NW","Western Cape":"WC"};
+let SEL=(()=>{try{const s=JSON.parse(localStorage.getItem("amathuba-provs")||"null");if(Array.isArray(s))return s}catch(e){}return AREA.province?[AREA.province]:[]})();
+const saveSel=()=>{try{localStorage.setItem("amathuba-provs",JSON.stringify(SEL))}catch(e){}};
+function addHome(p){if(p&&!SEL.includes(p)){SEL=SEL.length?SEL.concat([p]):[p];saveSel()}}
 const rad=x=>x*Math.PI/180;
 function km(a1,o1,a2,o2){const R=6371,dA=rad(a2-a1),dO=rad(o2-o1);const s=Math.sin(dA/2)**2+Math.cos(rad(a1))*Math.cos(rad(a2))*Math.sin(dO/2)**2;return 2*R*Math.asin(Math.sqrt(s))}
 function nearestTown(lat,lng){let best=null,bd=1e9;TOWNS.forEach(t=>{const d=km(lat,lng,t[2],t[3]);if(d<bd){bd=d;best=t}});return best?{town:best[0],province:best[1],dist:bd}:null}
 function townCoords(name){const t=TOWNS.find(x=>x[0].toLowerCase()===String(name||"").trim().toLowerCase());return t?[t[2],t[3]]:null}
-function renderArea(){
-  $("#areaProv").innerHTML='<option value="">Choose province…</option>'+PROVS.map(p=>`<option${p===AREA.province?" selected":""}>${p}</option>`).join("");
-  $("#areaText").textContent=AREA.province?`${AREA.town?AREA.town+", ":""}${AREA.province}. Opportunities in your province show first.`:"Share your location to see opportunities near you first, or choose your province.";
+function renderChips(){
+  $("#provChips").innerHTML=`<button type="button" data-chip="" aria-pressed="${!SEL.length}">All of South Africa</button>`+PROVS.map(p=>`<button type="button" data-chip="${p}" aria-pressed="${SEL.includes(p)}">${p}</button>`).join("");
+  $("#provChips").querySelectorAll("[data-chip]").forEach(b=>b.onclick=()=>{
+    const p=b.dataset.chip;
+    if(!p)SEL=[];else SEL=SEL.includes(p)?SEL.filter(x=>x!==p):SEL.concat([p]);
+    saveSel();renderLocal();renderOpps();});
 }
-$("#areaProv").onchange=e=>{AREA={province:e.target.value};saveArea();localProv=AREA.province||"all";renderArea();renderLocal();renderOpps()};
+function renderArea(){
+  renderChips();
+  $("#areaProv").innerHTML='<option value="">Choose province…</option>'+PROVS.map(p=>`<option${p===AREA.province?" selected":""}>${p}</option>`).join("");
+  $("#areaText").textContent=AREA.province?`${AREA.town?AREA.town+", ":""}${AREA.province}. This is your home area.`:"Share your location to see opportunities near you first, or choose your province.";
+}
+$("#areaProv").onchange=e=>{AREA={province:e.target.value};saveArea();addHome(AREA.province);renderLocal();renderOpps()};
 $("#areaGps").onclick=()=>{
   if(!navigator.geolocation){toast("This phone can’t share its location here. Choose your province instead.");return}
   $("#areaGps").textContent="Finding you…";
@@ -984,7 +995,7 @@ $("#areaGps").onclick=()=>{
     const n=nearestTown(pos.coords.latitude,pos.coords.longitude);$("#areaGps").textContent="Use my location";
     if(!n||n.dist>300){toast("You seem to be outside South Africa. Choose your province instead.");return}
     AREA={town:n.town,province:n.province,lat:+pos.coords.latitude.toFixed(2),lng:+pos.coords.longitude.toFixed(2)};saveArea();
-    localProv=AREA.province;renderArea();renderLocal();renderOpps();toast(`Found you near ${n.town}.`);
+    addHome(AREA.province);renderLocal();renderOpps();toast(`Found you near ${n.town}.`);
   },err=>{$("#areaGps").textContent="Use my location";toast(err.code===1?"Location is off for this site. Choose your province instead.":"Couldn’t find your location. Choose your province instead.")},{enableHighAccuracy:false,timeout:15000,maximumAge:600000});
 };
 function renderLocal(){
@@ -993,16 +1004,12 @@ function renderLocal(){
   const lv=S.level===""?null:+S.level;
   const open=LOCAL.filter(o=>o&&o.title&&(!o.closing||days(o.closing)>=0)&&(lv===null||o.minLevel===undefined||lv>=+o.minLevel));
   open.forEach(o=>{const c=townCoords(o.place);o._km=(AREA.lat!==undefined&&c)?Math.round(km(AREA.lat,AREA.lng,c[0],c[1])):null});
-  const inProv=o=>(o.province||"Eastern Cape")===localProv||o.province==="Remote / anywhere";
-  const live=open.filter(o=>localProv==="all"||inProv(o)).sort((a,b)=>{
+  const inProv=o=>SEL.includes(o.province||"Eastern Cape")||o.province==="Remote / anywhere";
+  const live=open.filter(o=>!SEL.length||inProv(o)).sort((a,b)=>{
     if(a._km!==null||b._km!==null)return (a._km??99999)-(b._km??99999);
     return (a.closing||"9999").localeCompare(b.closing||"9999")});
-  const counts={};open.forEach(o=>{const p=o.province||"Eastern Cape";counts[p]=(counts[p]||0)+1});
-  const opts=PROVS.concat(["Remote / anywhere"]);
-  const sel=`<label for="locProv" class="sr-only">Show opportunities in</label><select id="locProv" style="width:auto;margin:0 0 10px">
-    <option value="all">All of South Africa (${open.length})</option>${opts.map(p=>`<option value="${p}">${p}${counts[p]?` (${counts[p]})`:""}</option>`).join("")}</select>`;
-  const head=`<h3>Opportunities posted by Onele Foundation</h3><p class="hint" style="margin-bottom:8px">Checked before posting. ${AREA.lat!==undefined?"Nearest to you first.":"Closing soonest first."}</p>${sel}`;
-  if(!live.length){box.innerHTML=head+`<p class="hint">${open.length?"Nothing posted for this province right now. Try All of South Africa.":"No opportunities are posted right now. Onele Foundation adds verified jobs, learnerships and EPWP intakes from around South Africa here, so check back soon."}</p>`;}
+  const head=`<h3>Opportunities posted by Onele Foundation</h3><p class="hint" style="margin-bottom:8px">Checked before posting. Showing ${SEL.length?esc(SEL.join(", ").replace(/, ([^,]*)$/," and $1"))+" and remote work":"all of South Africa"}, ${AREA.lat!==undefined?"nearest to you first":"closing soonest first"}.</p>`;
+  if(!live.length){box.innerHTML=head+`<p class="hint">${open.length?"Nothing posted in these provinces right now. Try adding more provinces, or All of South Africa.":"No opportunities are posted right now. Onele Foundation adds verified jobs, learnerships and EPWP intakes from around South Africa here, so check back soon."}</p>`;}
   else box.innerHTML=head+live.map((o,i)=>{
     const d=o.closing?days(o.closing):null;
     const when=o.closing?(d===0?`<span class="soon">Closes today</span>`:d<=3?`<span class="soon">Closes in ${d} day${d===1?"":"s"} (${fmt(o.closing)})</span>`:`Closes ${fmt(o.closing)}`):"Open until filled";
@@ -1013,8 +1020,6 @@ function renderLocal(){
       ${o.howToApply?`<p><strong style="color:var(--ink)">How to apply:</strong> ${esc(o.howToApply)}</p>`:""}
       <div class="app-actions">${o.link&&/^https?:\/\//.test(o.link)?`<a href="${esc(o.link)}" target="_blank" rel="noopener noreferrer" style="color:var(--brand);font-weight:600;font-size:.9rem">Open advert</a>`:""}
       <button type="button" class="trackbtn" style="margin-left:0" data-local="${i}">Track this</button></div></div>`}).join("");
-  $("#locProv").value=localProv;
-  $("#locProv").onchange=e=>{localProv=e.target.value;renderLocal()};
   box.querySelectorAll("[data-local]").forEach(b=>b.onclick=()=>{const o=live[+b.dataset.local];show("track");openForm(null,{job:o.title,org:o.org||"",where:"Other",close:o.closing||"",link:o.link||"",ref:o.ref||""})});
 }
 loadLocal();
