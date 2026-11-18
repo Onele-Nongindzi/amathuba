@@ -37,3 +37,13 @@ Register a `.co.za` domain (e.g. `amathuba.co.za`) with any South African regist
 Check every link at least once a quarter; programmes and websites change often.
 
 Copyright (c) 2026 Onele Nongindzi. All rights reserved. See COPYRIGHT.txt.
+
+## Posting local opportunities (Near you in Lusikisiki)
+
+Local opportunities live in `data/local-opportunities.json` and show at the top of the "Where to apply" tab. Closed ones hide automatically.
+
+1. Open `admin.html` on the live site (for example `https://<your-site>/admin.html`).
+2. Fill in the form, click **Add to the list**, then **Copy the updated list**.
+3. Click the GitHub link on that page, replace the file's contents with what you copied, and click **Commit changes**.
+
+Only post opportunities you have verified. Never post anything that asks applicants for money.

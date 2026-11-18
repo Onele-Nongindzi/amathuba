@@ -150,6 +150,10 @@ textarea{min-height:84px;resize:vertical}
 .qcard summary{cursor:pointer;color:var(--brand);font-weight:600}
 .qcard details p{margin:6px 0 0;color:var(--soft)}
 .qcard textarea{min-height:90px}
+.local{border-left:4px solid var(--gold);border-radius:0 12px 12px 0;background:var(--paper);border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 16px;margin-bottom:10px}
+.local h4{margin:0 0 2px;font-size:1rem}
+.local p{margin:2px 0;font-size:.92rem;color:var(--soft)}
+.local .soon{color:var(--bad);font-weight:600}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);
   padding:10px 16px;border-radius:10px;font-size:.92rem;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
 .toast.show{opacity:1}
@@ -302,6 +306,7 @@ textarea{min-height:84px;resize:vertical}
 <!-- STEP 3 -->
 <section id="opps" role="tabpanel" hidden>
   <h2>Where to apply</h2>
+  <div id="localWrap"></div>
   <p class="hint" id="oppIntro">Choose your highest education, field and age in step 1 to see what fits you.</p>
   <div class="ladder" id="ladder"></div>
   <div id="rolesWrap"></div>
@@ -452,7 +457,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 function show(id){
   document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===id?"true":"false"));
   document.querySelectorAll("section[role=tabpanel]").forEach(s=>s.hidden=s.id!==id);
-  if(id==="cv")renderCV(); if(id==="opps")renderOpps(); if(id==="track")renderTrack(); if(id==="z83")renderZ83(); if(id==="iv")renderIV();
+  if(id==="cv")renderCV(); if(id==="opps"){renderOpps();renderLocal();loadLocal()} if(id==="track")renderTrack(); if(id==="z83")renderZ83(); if(id==="iv")renderIV();
   window.scrollTo({top:0});
 }
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>show(b.dataset.tab));
@@ -935,6 +940,33 @@ $("#ivRandom").onclick=()=>{
   const tick=()=>{out.textContent=s>0?`Answer out loud: ${Math.floor(s/60)}:${String(s%60).padStart(2,"0")} left`:"Time’s up. Good answers are usually under two minutes.";if(s--<=0)clearInterval(ivTick)};
   tick();ivTick=setInterval(tick,1000);
 };
+
+/* Local opportunities (from data/local-opportunities.json, edited on GitHub) */
+let LOCAL=null;
+async function loadLocal(){
+  try{const r=await fetch("data/local-opportunities.json",{cache:"no-cache"});LOCAL=r.ok?await r.json():[]}catch(e){LOCAL=LOCAL||[]}
+  if(!Array.isArray(LOCAL))LOCAL=[];
+  if(!$("#opps").hidden)renderLocal();
+}
+function renderLocal(){
+  const box=$("#localWrap");if(LOCAL===null){box.innerHTML="";return}
+  const lv=S.level===""?null:+S.level;
+  const live=LOCAL.filter(o=>o&&o.title&&(!o.closing||days(o.closing)>=0)&&(lv===null||o.minLevel===undefined||lv>=+o.minLevel))
+    .sort((a,b)=>(a.closing||"9999").localeCompare(b.closing||"9999"));
+  const head=`<h3>Near you in Lusikisiki</h3>`;
+  if(!live.length){box.innerHTML=head+`<p class="hint">No local opportunities are posted right now. Onele Foundation adds verified local jobs, learnerships and EPWP intakes here, so check back soon.</p>`;return}
+  box.innerHTML=head+`<p class="hint">Checked and posted by Onele Foundation. Closing soonest first.</p>`+live.map((o,i)=>{
+    const d=o.closing?days(o.closing):null;
+    const when=o.closing?(d===0?`<span class="soon">Closes today</span>`:d<=3?`<span class="soon">Closes in ${d} day${d===1?"":"s"} (${fmt(o.closing)})</span>`:`Closes ${fmt(o.closing)}`):"Open until filled";
+    return `<div class="local"><h4>${esc(o.title)}${o.type?` <span class="pill st-Applied" style="margin-left:6px">${esc(o.type)}</span>`:""}</h4>
+      <p>${esc([o.org,o.place].filter(Boolean).join(" · "))}</p><p>${when}</p>
+      ${o.requirements?`<p><strong style="color:var(--ink)">Requirements:</strong> ${esc(o.requirements)}</p>`:""}
+      ${o.howToApply?`<p><strong style="color:var(--ink)">How to apply:</strong> ${esc(o.howToApply)}</p>`:""}
+      <div class="app-actions">${o.link&&/^https?:\/\//.test(o.link)?`<a href="${esc(o.link)}" target="_blank" rel="noopener noreferrer" style="color:var(--brand);font-weight:600;font-size:.9rem">Open advert</a>`:""}
+      <button type="button" class="trackbtn" style="margin-left:0" data-local="${i}">Track this</button></div></div>`}).join("");
+  box.querySelectorAll("[data-local]").forEach(b=>b.onclick=()=>{const o=live[+b.dataset.local];show("track");openForm(null,{job:o.title,org:o.org||"",where:"Municipality notice",close:o.closing||"",link:o.link||"",ref:o.ref||""})});
+}
+loadLocal();
 })();
 
 

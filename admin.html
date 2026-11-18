@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Amathuba: post a local opportunity</title>
+<style>
+:root{--paper:#fff;--ink:#211a28;--soft:#5c5266;--line:#e0d8e7;--brand:#5b2a86;--pale:#ece4f2;--gold-pale:#fbf0cf;--bad:#b3261e;--good:#2e7d4f}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",Ubuntu,Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--ink);background:#fff;line-height:1.5}
+.wrap{max-width:760px;margin:0 auto;padding:24px 18px 60px}
+h1{font-size:1.6rem;margin:0 0 6px;color:var(--brand)}
+h2{font-size:1.15rem;margin:24px 0 8px}
+p.hint{color:var(--soft);margin:0 0 14px}
+fieldset{border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 16px}
+legend{font-weight:700;padding:0 6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+label{display:block;font-size:.9rem;font-weight:600;margin-bottom:4px}
+label small{font-weight:400;color:var(--soft)}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:#fff}
+textarea{min-height:80px}
+.btn{font:inherit;font-weight:600;border-radius:10px;padding:10px 16px;border:1px solid var(--brand);background:var(--brand);color:#fff;cursor:pointer}
+.btn.ghost{background:#fff;color:var(--brand)}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.note{background:var(--gold-pale);border-radius:10px;padding:12px 14px;font-size:.93rem;margin:0 0 16px}
+.err{color:var(--bad);min-height:1em;margin:6px 0 0}
+.ok{color:var(--good)}
+ol li{margin-bottom:6px}
+pre{background:var(--pale);border-radius:10px;padding:12px;overflow-x:auto;font-size:.82rem;max-height:320px}
+.item{border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:6px;display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:.92rem}
+.item.expired{opacity:.6}
+.item button{font:inherit;font-size:.85rem;border:1px solid var(--bad);color:var(--bad);background:#fff;border-radius:8px;padding:3px 10px;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #e8c04d;outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Post a local opportunity</h1>
+  <p class="hint">For Onele Foundation volunteers. Fill in the form, copy the updated list, and paste it into GitHub. The opportunity then appears in Amathuba under “Near you in Lusikisiki”.</p>
+  <div class="note"><strong>Only post opportunities you have checked</strong> with the employer, municipality or official notice. Never post anything that asks applicants for money.</div>
+
+  <fieldset><legend>The opportunity</legend>
+    <div class="grid">
+      <div><label for="title">Title</label><input id="title" placeholder="General Worker (EPWP)"></div>
+      <div><label for="org">Organisation</label><input id="org" placeholder="Ingquza Hill Municipality"></div>
+      <div><label for="type">Type</label><select id="type"><option>Job</option><option>EPWP</option><option>Learnership</option><option>Internship</option><option>Bursary</option><option>Training</option><option>Volunteer</option></select></div>
+      <div><label for="place">Place</label><input id="place" value="Lusikisiki"></div>
+      <div><label for="closing">Closing date <small>(leave empty if open)</small></label><input id="closing" type="date"></div>
+      <div><label for="minLevel">Minimum education</label><select id="minLevel"><option value="">Anyone</option><option value="1">Grade 9 to 11</option><option value="2">Matric</option><option value="3">Certificate / NC(V)</option><option value="4">Diploma</option><option value="5">Degree</option></select></div>
+      <div><label for="ref">Reference number <small>(optional)</small></label><input id="ref"></div>
+      <div><label for="link">Link to the advert <small>(optional)</small></label><input id="link" type="url" placeholder="https://"></div>
+      <div style="grid-column:1/-1"><label for="requirements">Requirements</label><textarea id="requirements" placeholder="Grade 10, aged 18 to 35, living in Ward 12"></textarea></div>
+      <div style="grid-column:1/-1"><label for="howToApply">How to apply</label><textarea id="howToApply" placeholder="Hand in a CV and certified ID copy at the municipal offices, Main Street, by 16:00"></textarea></div>
+    </div>
+    <p class="err" id="err" role="alert"></p>
+    <div class="btns"><button class="btn" type="button" id="add">Add to the list</button></div>
+  </fieldset>
+
+  <h2>Current list</h2>
+  <p class="hint" id="status">Loading the list on the live site…</p>
+  <div id="items"></div>
+  <div class="btns"><button class="btn ghost" type="button" id="dropExpired">Remove closed opportunities</button></div>
+
+  <h2>Publish the changes</h2>
+  <ol>
+    <li><button class="btn" type="button" id="copy">Copy the updated list</button> <span id="copied" class="ok" aria-live="polite"></span></li>
+    <li>Open the list on GitHub: <a id="ghLink" href="https://github.com/onele-nongindzi/amathuba/edit/main/data/local-opportunities.json" target="_blank" rel="noopener noreferrer">edit local-opportunities.json</a> (sign in if asked).</li>
+    <li>Select everything in the file (Cmd/Ctrl + A), delete it, and paste the copied list.</li>
+    <li>Click <strong>Commit changes</strong>. The site updates within a few minutes.</li>
+  </ol>
+  <pre id="out" aria-label="Updated list"></pre>
+</div>
+<script>
+(function(){
+  const $=s=>document.querySelector(s);
+  let list=[];
+  const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d};
+  const expired=o=>o.closing&&new Date(o.closing+"T00:00:00")<today();
+  function render(){
+    $("#items").innerHTML=list.length?"":'<p class="hint">The list is empty.</p>';
+    list.forEach((o,i)=>{
+      const d=document.createElement("div");d.className="item"+(expired(o)?" expired":"");
+      const t=document.createElement("span");t.textContent=`${o.title}${o.org?" · "+o.org:""}${o.closing?" · closes "+o.closing:""}${expired(o)?" (closed)":""}`;
+      const b=document.createElement("button");b.type="button";b.textContent="Remove";b.onclick=()=>{list.splice(i,1);render()};
+      d.append(t,b);$("#items").append(d);
+    });
+    $("#out").textContent=JSON.stringify(list,null,2);
+    $("#copied").textContent="";
+  }
+  fetch("data/local-opportunities.json",{cache:"no-cache"}).then(r=>r.ok?r.json():[]).then(j=>{list=Array.isArray(j)?j:[];$("#status").textContent=`${list.length} opportunit${list.length===1?"y":"ies"} on the live site.`;render()})
+    .catch(()=>{$("#status").textContent="Couldn’t load the current list. Open this page from the live site, not from a file on your computer.";render()});
+  ["title","org"].forEach(id=>$("#"+id).addEventListener("input",()=>$("#err").textContent=""));
+  $("#add").onclick=()=>{
+    const v=id=>$("#"+id).value.trim();
+    if(!v("title")||!v("org")){$("#err").textContent="Enter the title and the organisation first.";return}
+    if(v("link")&&!/^https?:\/\//.test(v("link"))){$("#err").textContent="The link must start with https://";return}
+    const o={title:v("title"),org:v("org"),type:v("type"),place:v("place"),posted:new Date().toISOString().slice(0,10)};
+    ["closing","ref","link","requirements","howToApply"].forEach(k=>{if(v(k))o[k]=v(k)});
+    if(v("minLevel"))o.minLevel=+v("minLevel");
+    list.push(o);render();
+    ["title","org","closing","ref","link","requirements","howToApply"].forEach(id=>$("#"+id).value="");
+    $("#status").textContent="Added. Now copy the updated list and paste it into GitHub.";
+  };
+  $("#dropExpired").onclick=()=>{const n=list.length;list=list.filter(o=>!expired(o));render();$("#status").textContent=`Removed ${n-list.length} closed opportunit${n-list.length===1?"y":"ies"}.`};
+  $("#copy").onclick=async()=>{
+    try{await navigator.clipboard.writeText(JSON.stringify(list,null,2));$("#copied").textContent="Copied."}
+    catch(e){const r=document.createRange();r.selectNodeContents($("#out"));const s=getSelection();s.removeAllRanges();s.addRange(r);$("#copied").textContent="Press Cmd/Ctrl + C to copy."}
+  };
+})();
+</script>
+</body>
+</html>

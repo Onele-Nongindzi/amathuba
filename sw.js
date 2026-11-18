@@ -1,7 +1,7 @@
 // Amathuba offline support: caches the app so it opens without data after the first visit.
 // Change VERSION whenever you update any file, so phones fetch the new version.
-const VERSION = "amathuba-v12";
-const FILES = ["./", "index.html", "js/opportunities.js", "vendor/jspdf.umd.min.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png"];
+const VERSION = "amathuba-v13";
+const FILES = ["./", "index.html", "js/opportunities.js", "data/local-opportunities.json", "vendor/jspdf.umd.min.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k)))));
@@ -9,6 +9,11 @@ self.addEventListener("activate", e => {
 });
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET" || new URL(e.request.url).origin !== location.origin) return;
+  // Local opportunities change often: try the network first, fall back to the saved copy offline.
+  if (new URL(e.request.url).pathname.endsWith("/data/local-opportunities.json")) {
+    e.respondWith(fetch(e.request).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put(e.request, copy)); return res; }).catch(() => caches.match(e.request)));
+    return;
+  }
   // Cache first to save mobile data; refresh the cache quietly in the background.
   e.respondWith(caches.open(VERSION).then(async c => {
     const hit = await c.match(e.request);
