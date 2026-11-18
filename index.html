@@ -263,6 +263,31 @@ textarea{min-height:84px;resize:vertical}
   </div>
   
   <div class="paper" id="preview" aria-label="CV preview"></div>
+
+  <h2 style="margin-top:28px" id="clTitle">Cover letter</h2>
+  <p class="hint">A short letter that goes with your CV. Fill in the job, choose “Write my letter”, then edit it so it sounds like you. If you pasted a job advert above, the letter uses the matching skills.</p>
+  <fieldset>
+    <div class="grid">
+      <div><label for="cl_job">Job title</label><input id="cl_job" data-cl="job" placeholder="Admin Clerk"></div>
+      <div><label for="cl_org">Company or department</label><input id="cl_org" data-cl="org" placeholder="Boxer Superstores"></div>
+      <div><label for="cl_ref">Reference number <small>(if any)</small></label><input id="cl_ref" data-cl="ref"></div>
+      <div><label for="cl_src">Where you saw the job</label><input id="cl_src" data-cl="src" placeholder="Pnet"></div>
+      <div><label for="cl_to">Person to address <small>(if the advert names one)</small></label><input id="cl_to" data-cl="to" placeholder="Ms N. Mbele"></div>
+      <div style="grid-column:1/-1"><label for="cl_why">Why do you want to work there? <small>(one sentence, optional)</small></label><input id="cl_why" data-cl="why" placeholder="I shop there every week and admire how the store serves our community."></div>
+    </div>
+    <p class="err" id="clErr" role="alert"></p>
+    <div class="btns"><button class="btn" type="button" id="clGen">Write my letter</button></div>
+  </fieldset>
+  <div id="clOut" hidden>
+    <label for="clText">Your letter <small>(edit anything you like)</small></label>
+    <textarea id="clText" style="min-height:380px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;background:#fff;color:#111"></textarea>
+    <div class="btns">
+      <button class="btn" type="button" id="clPdf">Download PDF</button>
+      <button class="btn ghost" type="button" id="clTxt">Download as text</button>
+      <button class="btn ghost" type="button" id="clCopy">Copy text</button>
+    </div>
+    <p class="hint">Keep it to one page. For government posts, the Z83 and CV are usually all you need, so only add a letter if the advert asks for one.</p>
+  </div>
 </section>
 
 <!-- STEP 3 -->
@@ -760,6 +785,68 @@ $("#zPdf").onclick=async()=>{
   head("Parts E to G");line("Write: Refer to attached CV");row("Condition preventing re-appointment",Z.reapp);
   head("Before you send it");ZTICK.forEach(([k,t])=>line(`[${Z[k]?"x":" "}] ${t}`));
   saveFile(`Z83_answers_${(Z.ref||"post").replace(/[^\w-]+/g,"_")}.pdf`,doc.output("arraybuffer"));
+};
+
+/* Cover letter */
+const CKEY="amathuba-cl-v1";
+let CL={};try{CL=JSON.parse(localStorage.getItem(CKEY)||"{}")}catch(e){CL={}}
+const saveCL=()=>{try{localStorage.setItem(CKEY,JSON.stringify(CL))}catch(e){}};
+document.querySelectorAll("[data-cl]").forEach(el=>{el.value=CL[el.dataset.cl]||"";el.addEventListener("input",()=>{CL[el.dataset.cl]=el.value;saveCL();$("#clErr").textContent=""})});
+if(CL.text){$("#clText").value=CL.text;$("#clOut").hidden=false}
+$("#clText").addEventListener("input",()=>{CL.text=$("#clText").value;saveCL()});
+const lc1=s=>s?s.charAt(0).toLowerCase()+s.slice(1):s;
+const andList=a=>a.length<2?a.join(""):a.slice(0,-1).join(", ")+" and "+a[a.length-1];
+function writeLetter(){
+  const job=(CL.job||"").trim(),org=(CL.org||"").trim();
+  const name=S.name.trim()||"Your Name";
+  const d=new Date().toLocaleDateString("en-ZA",{day:"numeric",month:"long",year:"numeric"});
+  const ed=S.edu.filter(e=>e.qual);const qual=ed.length?ed[0].qual:"";
+  const ex=S.exp.filter(e=>e.title||e.org);
+  const ad=$("#advert").value.toLowerCase();
+  let sk=skillsArr();const matched=ad?sk.filter(s=>ad.includes(s.toLowerCase())):[];
+  const top=(matched.length?matched:sk).slice(0,3);
+  const to=(CL.to||"").trim();
+  const L=[];
+  L.push(name);L.push([S.phone,S.email,S.location].filter(Boolean).join(" | "));L.push("");L.push(d);L.push("");
+  L.push(to||"The Hiring Manager");L.push(org);L.push("");
+  L.push(`Dear ${to||"Hiring Manager"},`);L.push("");
+  L.push(`RE: APPLICATION FOR THE POSITION OF ${job.toUpperCase()}${CL.ref?` (REF: ${CL.ref.trim()})`:""}`);L.push("");
+  let p1=`I am writing to apply for the position of ${job} at ${org}${CL.src?`, as advertised on ${CL.src.trim()}`:""}.`;
+  if(qual&&ex.length)p1+=` I hold a ${qual.replace(/^(a|an|the) /i,"")} and have worked as ${/^[aeiou]/i.test(ex[0].title||"")?"an":"a"} ${ex[0].title||"team member"}${ex[0].org?` at ${ex[0].org}`:""}.`;
+  else if(qual)p1+=` I hold a ${qual.replace(/^(a|an|the) /i,"")} and I am ready to put what I have learned into practice.`;
+  else if(ex.length)p1+=` I have experience as ${/^[aeiou]/i.test(ex[0].title||"")?"an":"a"} ${ex[0].title||"team member"}${ex[0].org?` at ${ex[0].org}`:""}.`;
+  p1+=" I believe I can make a real contribution to your team.";
+  L.push(p1);L.push("");
+  const duties=ex.length?lines(ex[0].duties).slice(0,2).map(x=>lc1(x.replace(/\.$/,""))):[];
+  let p2="";
+  if(duties.length)p2=`In my ${ex[0].title?"role as "+ex[0].title:"previous role"}, I ${andList(duties)}. `;
+  if(top.length)p2+=matched.length?`The skills your advert asks for, especially ${andList(top)}, are ones I use with confidence.`:`I bring skills in ${andList(top)}, and I learn new systems quickly.`;
+  else p2+="I am reliable, quick to learn and comfortable working as part of a team.";
+  L.push(p2.trim());L.push("");
+  L.push(((CL.why||"").trim()?CL.why.trim().replace(/([^.!?])$/,"$1.")+" ":"")+`I am committed, punctual and eager to grow, and I would value the opportunity to do so at ${org}.`);L.push("");
+  L.push(`My CV is attached for your consideration. I am available for an interview at your convenience and can be reached on ${S.phone||"[phone number]"}${S.email?` or at ${S.email}`:""}. Thank you for your time.`);L.push("");
+  L.push("Yours sincerely,");L.push("");L.push(name);
+  return L.join("\n");
+}
+$("#clGen").onclick=()=>{
+  if(!(CL.job||"").trim()||!(CL.org||"").trim()){$("#clErr").textContent="Enter the job title and the company first.";return}
+  if(CL.text&&!$("#clGen").dataset.armed){$("#clGen").dataset.armed="1";$("#clGen").textContent="Tap again to replace your edited letter";setTimeout(()=>{delete $("#clGen").dataset.armed;$("#clGen").textContent="Write my letter"},4000);return}
+  delete $("#clGen").dataset.armed;$("#clGen").textContent="Write my letter";
+  CL.text=writeLetter();saveCL();$("#clText").value=CL.text;$("#clOut").hidden=false;$("#clText").scrollIntoView({behavior:"smooth",block:"start"});toast("Letter written. Read it and make it your own.");
+};
+function clName(ext){return ((S.name.trim()||"My")+" Cover Letter").replace(/[^\w\- ]+/g,"").replace(/\s+/g,"_")+"."+ext}
+$("#clTxt").onclick=()=>saveFile(clName("txt"),$("#clText").value);
+$("#clCopy").onclick=async()=>{try{await navigator.clipboard.writeText($("#clText").value);toast("Letter copied.")}catch(e){$("#clText").select();toast("Press Cmd/Ctrl + C to copy.")}};
+$("#clPdf").onclick=async()=>{
+  let lib;try{lib=await loadJsPDF()}catch(e){toast("The PDF tool didn’t load. Use Download as text.");return}
+  const doc=new lib.jsPDF({unit:"pt",format:"a4"});const W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),M=60;let y=M;
+  doc.setFont("helvetica","normal");doc.setFontSize(11);
+  $("#clText").value.split("\n").forEach((ln,i)=>{
+    const bold=i===0||/^RE:/.test(ln);doc.setFont("helvetica",bold?"bold":"normal");
+    const parts=ln.trim()?doc.splitTextToSize(pdfSafe(ln),W-2*M):[""];
+    parts.forEach(p=>{if(y>H-M){doc.addPage();y=M}doc.text(p,M,y);y+=15});
+  });
+  saveFile(clName("pdf"),doc.output("arraybuffer"));
 };
 })();
 
