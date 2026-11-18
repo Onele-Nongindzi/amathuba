@@ -4,3 +4,5 @@ Copyright (c) 2026 Onele Nongindzi. All rights reserved.
 Created by Onele Nongindzi for Onele Foundation, Lusikisiki, Eastern Cape.
 No part of this software may be copied, modified or redistributed without written permission from the copyright holder.
 Third-party component: jsPDF (vendor/jspdf.umd.min.js) is used under the MIT License, (c) James Hall and contributors.
+Third-party component: pdf.js (vendor/pdf.min.js, vendor/pdf.worker.min.js) is used under the Apache License 2.0, (c) Mozilla Foundation. See vendor/pdfjs-LICENSE.txt.
+Third-party component: mammoth.js (vendor/mammoth.browser.min.js) is used under the BSD 2-Clause License, (c) Michael Williamson. See vendor/mammoth-LICENSE.txt.
