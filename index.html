@@ -313,11 +313,9 @@ textarea{min-height:84px;resize:vertical}
   <h2>Where to apply</h2>
   <div class="opp" id="areaBar">
     <h4>Your area</h4>
-    <p id="areaText">Share your location to see opportunities near you first, or choose your province.</p>
+    <p id="areaText">Share your location to see the nearest opportunities first, or just pick provinces below.</p>
     <div class="app-actions">
       <button class="btn small" type="button" id="areaGps">Use my location</button>
-      <label class="sr-only" for="areaProv">Province</label>
-      <select id="areaProv" style="width:auto"><option value="">Choose province…</option></select>
     </div>
     <p style="margin:12px 0 6px;font-weight:600;color:var(--ink);font-size:.93rem">Show opportunities in <span style="font-weight:400;color:var(--soft)">(choose one or more)</span></p>
     <div class="chips" id="provChips" role="group" aria-label="Provinces to show"></div>
@@ -694,8 +692,7 @@ function renderOpps(){
     <div class="opp"><h4>See live job listings</h4><p>Each link opens today’s adverts for that job in ${SEL.length?esc(SEL.join(", ").replace(/, ([^,]*)$/," and $1")):"all of South Africa"}. Change the provinces in “Your area” above.</p>${rows}</div>`;
   }
   $("#rolesWrap").innerHTML=rh;
-  let AP="";try{AP=(JSON.parse(localStorage.getItem("amathuba-area")||"{}").province)||""}catch(e){}
-  const fits=o=>o.levels.includes(lv)&&o.ages.includes(ag)&&(!o.prov||!AP||o.prov===AP)&&(!o.notProv||!AP||o.notProv!==AP);
+  const fits=o=>o.levels.includes(lv)&&o.ages.includes(ag)&&(!o.prov||!SEL.length||SEL.includes(o.prov))&&(!o.notProv||!SEL.length||SEL.some(p=>p!==o.notProv));
   const specific=OPPS.filter(o=>o.quals&&o.quals.includes(q)&&fits(o));
   const general=OPPS.filter(o=>!o.quals&&fits(o));
   let h="";
@@ -984,19 +981,17 @@ function renderChips(){
 }
 function renderArea(){
   renderChips();
-  $("#areaProv").innerHTML='<option value="">Choose province…</option>'+PROVS.map(p=>`<option${p===AREA.province?" selected":""}>${p}</option>`).join("");
-  $("#areaText").textContent=AREA.province?`${AREA.town?AREA.town+", ":""}${AREA.province}. This is your home area.`:"Share your location to see opportunities near you first, or choose your province.";
+  $("#areaText").textContent=AREA.province?`${AREA.town?AREA.town+", ":""}${AREA.province}. This is your home area.`:"Share your location to see the nearest opportunities first, or just pick provinces below.";
 }
-$("#areaProv").onchange=e=>{AREA={province:e.target.value};saveArea();addHome(AREA.province);renderLocal();renderOpps()};
 $("#areaGps").onclick=()=>{
-  if(!navigator.geolocation){toast("This phone can’t share its location here. Choose your province instead.");return}
+  if(!navigator.geolocation){toast("This phone can’t share its location here. Pick your provinces instead.");return}
   $("#areaGps").textContent="Finding you…";
   navigator.geolocation.getCurrentPosition(pos=>{
     const n=nearestTown(pos.coords.latitude,pos.coords.longitude);$("#areaGps").textContent="Use my location";
-    if(!n||n.dist>300){toast("You seem to be outside South Africa. Choose your province instead.");return}
+    if(!n||n.dist>300){toast("You seem to be outside South Africa. Pick your provinces instead.");return}
     AREA={town:n.town,province:n.province,lat:+pos.coords.latitude.toFixed(2),lng:+pos.coords.longitude.toFixed(2)};saveArea();
     addHome(AREA.province);renderLocal();renderOpps();toast(`Found you near ${n.town}.`);
-  },err=>{$("#areaGps").textContent="Use my location";toast(err.code===1?"Location is off for this site. Choose your province instead.":"Couldn’t find your location. Choose your province instead.")},{enableHighAccuracy:false,timeout:15000,maximumAge:600000});
+  },err=>{$("#areaGps").textContent="Use my location";toast(err.code===1?"Location is off for this site. Pick your provinces instead.":"Couldn’t find your location. Pick your provinces instead.")},{enableHighAccuracy:false,timeout:15000,maximumAge:600000});
 };
 function renderLocal(){
   renderArea();
