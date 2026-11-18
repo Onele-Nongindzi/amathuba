@@ -135,8 +135,13 @@ textarea{min-height:84px;resize:vertical}
 .app-actions select{width:auto;padding:5px 8px;font-size:.88rem}
 .err{color:var(--bad);font-size:.9rem;margin:8px 0 0;min-height:1em}
 .trackbtn{font:inherit;font-size:.85rem;margin-left:10px;border:1px solid var(--brand);background:transparent;color:var(--brand);border-radius:20px;padding:2px 10px;cursor:pointer}
-@media (max-width:560px){ nav{flex-wrap:wrap} nav button{flex:1 1 45%} .stats{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:560px){ nav{flex-wrap:wrap;position:static} nav button{flex:1 1 45%} nav button:last-child{flex-basis:100%} .stats{grid-template-columns:repeat(2,minmax(0,1fr))} }
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.yn{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:9px 0;border-top:1px solid var(--line);font-size:.93rem}
+.yn select{width:auto;min-width:96px}
+.yn.unanswered span{color:var(--bad)}
+.checks li.tick{cursor:pointer}
+.checks li.tick.no::before{content:"○";color:var(--soft)}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);
   padding:10px 16px;border-radius:10px;font-size:.92rem;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
 .toast.show{opacity:1}
@@ -160,6 +165,7 @@ textarea{min-height:84px;resize:vertical}
   <button role="tab" aria-selected="false" data-tab="cv"><span class="n">2</span><span class="t">Your CV</span></button>
   <button role="tab" aria-selected="false" data-tab="opps"><span class="n">3</span><span class="t">Where to apply</span></button>
   <button role="tab" aria-selected="false" data-tab="track"><span class="n">4</span><span class="t">My applications</span></button>
+  <button role="tab" aria-selected="false" data-tab="z83"><span class="n">5</span><span class="t">Z83 helper</span></button>
 </nav>
 
 <!-- STEP 1 -->
@@ -303,6 +309,69 @@ textarea{min-height:84px;resize:vertical}
   </div>
   <div id="trList"></div>
 </section>
+
+<!-- STEP 5 -->
+<section id="z83" role="tabpanel" hidden>
+  <h2>Z83 helper for government jobs</h2>
+  <p class="hint">Every government post needs the Z83 application form. Many applications are thrown out because the form is old, incomplete or unsigned. Fill in your answers here, then copy them neatly onto the official form.</p>
+  <div class="note"><strong>Use only the new Z83</strong>, marked “Effective 01 January 2021” at the bottom of the first page. The old form is disqualified. Download it free from <a href="https://www.dpsa.gov.za" target="_blank" rel="noopener noreferrer" style="color:inherit;font-weight:700">dpsa.gov.za</a>, and never pay anyone for it.</div>
+  <div class="btns" style="margin-top:0"><button class="btn ghost small" type="button" id="zFill">Fill from my CV details</button></div>
+
+  <fieldset><legend>Part A: The post you’re applying for</legend>
+    <p class="hint">Use a new form for every post. Copy these exactly from the advert.</p>
+    <div class="grid">
+      <div><label for="z_post">Position (job title)</label><input id="z_post" data-z="post" placeholder="Administration Clerk"></div>
+      <div><label for="z_ref">Reference number</label><input id="z_ref" data-z="ref" placeholder="ECDOH/2026/112"></div>
+      <div><label for="z_dept">Department</label><input id="z_dept" data-z="dept" placeholder="Eastern Cape Department of Health"></div>
+      <div><label for="z_start">When can you start?</label><input id="z_start" data-z="start" placeholder="Immediately / 1 month notice"></div>
+    </div>
+  </fieldset>
+
+  <fieldset><legend>Part B: Personal details</legend>
+    <div class="grid">
+      <div><label for="z_surname">Surname</label><input id="z_surname" data-z="surname"></div>
+      <div><label for="z_names">Full names</label><input id="z_names" data-z="names"></div>
+      <div><label for="z_dob">Date of birth</label><input id="z_dob" data-z="dob" type="date"></div>
+      <div><label for="z_id">ID number <small>(or passport number)</small></label><input id="z_id" data-z="idno" inputmode="numeric" autocomplete="off"></div>
+      <div><label for="z_citizen">South African citizen?</label><select id="z_citizen" data-z="citizen"><option value="">Choose…</option><option>Yes</option><option>No</option></select></div>
+      <div><label for="z_permit">If not, nationality and work permit number</label><input id="z_permit" data-z="permit" placeholder="Write N/A if you are a citizen"></div>
+    </div>
+    <p class="hint" style="margin:14px 0 8px">Answer every yes/no question honestly. A false answer can lead to dismissal later. Never leave one blank.</p>
+    <div id="zQs"></div>
+    <div class="grid" style="margin-top:10px">
+      <div><label for="z_yrsPriv">Years of experience: private sector</label><input id="z_yrsPriv" data-z="yrsPriv" inputmode="numeric" placeholder="0"></div>
+      <div><label for="z_yrsPub">Years of experience: public sector</label><input id="z_yrsPub" data-z="yrsPub" inputmode="numeric" placeholder="0"></div>
+    </div>
+  </fieldset>
+
+  <fieldset><legend>Part C: Contact details</legend>
+    <div class="grid">
+      <div><label for="z_lang">Preferred language for letters</label><input id="z_lang" data-z="lang" placeholder="English"></div>
+      <div><label for="z_phone">Contact number</label><input id="z_phone" data-z="phone" inputmode="tel"></div>
+      <div><label for="z_email">Email address</label><input id="z_email" data-z="email" type="email"></div>
+    </div>
+  </fieldset>
+
+  <fieldset><legend>Part D: Qualifications</legend>
+    <p class="hint">List your highest school qualification and any tertiary qualifications.</p>
+    <textarea id="z_quals" data-z="quals" placeholder="National Senior Certificate, Lusikisiki Village School, 2018&#10;Diploma in Information Technology, Walter Sisulu University, 2022"></textarea>
+  </fieldset>
+
+  <fieldset><legend>Parts E to G: Registration, experience and references</legend>
+    <p class="hint">Departments usually accept “Refer to attached CV” here. One question in this part must still be answered:</p>
+    <label for="z_reapp">Is there any condition that prevents your re-appointment in the public service?</label>
+    <select id="z_reapp" data-z="reapp"><option value="">Choose…</option><option>No</option><option>Yes</option><option>N/A: never worked in the public service</option></select>
+  </fieldset>
+
+  <h3>Before you send it</h3>
+  <ul class="checks" id="zCheck"></ul>
+  <p class="hint" id="zReady"></p>
+  <div class="btns">
+    <button class="btn" type="button" id="zPdf">Download my Z83 answer sheet</button>
+    <button class="btn danger" type="button" id="zClear">Clear Z83 answers</button>
+  </div>
+  <p class="hint">The answer sheet is a guide for you to copy from. It is not the official form and can’t be submitted in its place. Always read the advert too: some departments add their own rules.</p>
+</section>
 <footer style="border-top:1px solid var(--line);margin-top:30px;padding-top:16px;color:var(--soft);font-size:.88rem">
   <p style="margin:0 0 4px">Amathuba was created by Onele Nongindzi for Onele Foundation.</p>
   <p style="margin:0 0 4px">Your information is saved only on this device. It is never sent to Onele Foundation or anyone else.</p>
@@ -330,7 +399,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 function show(id){
   document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===id?"true":"false"));
   document.querySelectorAll("section[role=tabpanel]").forEach(s=>s.hidden=s.id!==id);
-  if(id==="cv")renderCV(); if(id==="opps")renderOpps(); if(id==="track")renderTrack();
+  if(id==="cv")renderCV(); if(id==="opps")renderOpps(); if(id==="track")renderTrack(); if(id==="z83")renderZ83();
   window.scrollTo({top:0});
 }
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>show(b.dataset.tab));
@@ -486,7 +555,7 @@ function saveFile(filename,data){
     const blob=new Blob([data],{type:filename.endsWith(".pdf")?"application/pdf":"text/plain;charset=utf-8"});
     const url=URL.createObjectURL(blob);const a=document.createElement("a");
     a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),4000);toast("CV saved to your downloads.");
+    setTimeout(()=>URL.revokeObjectURL(url),4000);toast("Saved to your downloads.");
   }catch(e){toast("The file couldn’t be saved. Use Copy text instead.")}
 }
 function loadJsPDF(){return new Promise((res,rej)=>{
@@ -629,6 +698,69 @@ function renderTrack(){
     else{b.dataset.armed="1";b.textContent="Tap again to remove";setTimeout(()=>{if(b.isConnected){delete b.dataset.armed;b.textContent="Remove"}},4000)}});
 }
 
+
+/* Z83 helper */
+const ZKEY="amathuba-z83-v1";
+let Z={};try{Z=JSON.parse(localStorage.getItem(ZKEY)||"{}")}catch(e){Z={}}
+const saveZ=()=>{try{localStorage.setItem(ZKEY,JSON.stringify(Z))}catch(e){}};
+const ZQ=[
+ ["q1","Have you been convicted or found guilty of a criminal offence?"],
+ ["q2","Do you have any pending criminal case against you?"],
+ ["q3","Have you ever been dismissed for misconduct from the public service?"],
+ ["q4","Do you have any pending disciplinary case against you?"],
+ ["q5","Have you resigned from a post while disciplinary proceedings were pending against you?"],
+ ["q6","Are you conducting business with the State, or are you a director of a company that does?"],
+ ["q7","If you are employed in the public service, will you give up any business interests with the State if appointed?"]];
+const ZTICK=[["t1","Every field in Parts A, B, C and D is filled in (write N/A, never leave blanks)"],["t2","Every page is initialled and the form is signed and dated"],["t3","The reference number matches the advert exactly"],["t4","One separate Z83 for each post you apply for"],["t5","Z83 and CV saved together as ONE PDF if emailing (no photos)"],["t6","Sent before the closing date and time"]];
+function zQs(){
+  $("#zQs").innerHTML=ZQ.map(([k,q])=>`<div class="yn${Z[k]?"":" unanswered"}"><span>${esc(q)}</span><select data-zq="${k}" aria-label="${esc(q)}"><option value="">Choose…</option>${(k==="q7"?["Yes","No","N/A"]:["No","Yes"]).map(o=>`<option${Z[k]===o?" selected":""}>${o}</option>`).join("")}</select></div>`).join("");
+  document.querySelectorAll("[data-zq]").forEach(s=>s.onchange=()=>{Z[s.dataset.zq]=s.value;saveZ();renderZ83()});
+}
+document.querySelectorAll("[data-z]").forEach(el=>{el.value=Z[el.dataset.z]||"";el.addEventListener("input",()=>{Z[el.dataset.z]=el.value;saveZ();zStatus()});el.addEventListener("change",()=>{Z[el.dataset.z]=el.value;saveZ();zStatus()})});
+$("#zFill").onclick=()=>{
+  const parts=S.name.trim().split(/\s+/);
+  if(parts.length>1&&!Z.surname){Z.surname=parts[parts.length-1];Z.names=parts.slice(0,-1).join(" ")}
+  if(!Z.phone)Z.phone=S.phone; if(!Z.email)Z.email=S.email;
+  if(!Z.quals)Z.quals=S.edu.filter(e=>e.qual).map(e=>[e.qual,e.inst,e.year].filter(Boolean).join(", ")).join("\n");
+  if(!Z.post&&S.target)Z.post=S.target;
+  saveZ();document.querySelectorAll("[data-z]").forEach(el=>el.value=Z[el.dataset.z]||"");renderZ83();toast("Copied what we could from your CV details.");
+};
+$("#zClear").onclick=function(){
+  if(!this.dataset.armed){this.dataset.armed="1";this.textContent="Tap again to clear";setTimeout(()=>{delete this.dataset.armed;this.textContent="Clear Z83 answers"},4000);return}
+  Z={};saveZ();document.querySelectorAll("[data-z]").forEach(el=>el.value="");delete this.dataset.armed;this.textContent="Clear Z83 answers";renderZ83();toast("Z83 answers cleared.");
+};
+function zMissing(){
+  const need=[["post","Position"],["ref","Reference number"],["dept","Department"],["surname","Surname"],["names","Full names"],["dob","Date of birth"],["idno","ID number"],["citizen","Citizenship"],["phone","Contact number"],["email","Email"],["quals","Qualifications"],["reapp","Re-appointment question"]];
+  return need.filter(([k])=>!String(Z[k]||"").trim()).map(x=>x[1]).concat(ZQ.filter(([k])=>!Z[k]).length?["Yes/no questions in Part B"]:[]);
+}
+function zStatus(){
+  const m=zMissing();
+  $("#zReady").textContent=m.length?`Still to fill in: ${m.join(", ")}.`:"All your answers are ready. Copy them onto the official form, then go through the checklist.";
+  $("#zReady").style.color=m.length?"var(--bad)":"var(--good)";
+}
+function renderZ83(){
+  zQs();
+  $("#zCheck").innerHTML=ZTICK.map(([k,t])=>`<li class="tick ${Z[k]?"ok":"no"}" data-zt="${k}" role="checkbox" aria-checked="${!!Z[k]}" tabindex="0">${esc(t)}</li>`).join("");
+  document.querySelectorAll("[data-zt]").forEach(li=>{const f=()=>{Z[li.dataset.zt]=!Z[li.dataset.zt];saveZ();renderZ83()};li.onclick=f;li.onkeydown=e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();f()}}});
+  zStatus();
+}
+$("#zPdf").onclick=async()=>{
+  let lib;try{lib=await loadJsPDF()}catch(e){toast("The PDF tool didn’t load. Refresh and try again.");return}
+  const doc=new lib.jsPDF({unit:"pt",format:"a4"});const W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),M=50;let y=M;
+  const line=(t,b,sz)=>{doc.setFont("helvetica",b?"bold":"normal");doc.setFontSize(sz||10.5);doc.splitTextToSize(pdfSafe(t),W-2*M).forEach(l=>{if(y>H-M){doc.addPage();y=M}doc.text(l,M,y);y+=(sz||10.5)*1.4})};
+  const row=(l,v)=>line(`${l}: ${v&&String(v).trim()?v:"________________"}`);
+  const head=t=>{y+=8;line(t,true,12)};
+  line("Z83 answer sheet (copy onto the official form)",true,15);
+  line("Not the official form. Use the new Z83 (effective 01 January 2021) from dpsa.gov.za.",false,9.5);
+  head("Part A: The post");row("Position",Z.post);row("Reference number",Z.ref);row("Department",Z.dept);row("Available to start",Z.start);
+  head("Part B: Personal details");row("Surname",Z.surname);row("Full names",Z.names);row("Date of birth",Z.dob);row("ID / passport number",Z.idno);row("South African citizen",Z.citizen);row("Nationality and work permit",Z.permit||"N/A");
+  ZQ.forEach(([k,q])=>row(q,Z[k]));row("Years experience, private sector",Z.yrsPriv||"0");row("Years experience, public sector",Z.yrsPub||"0");
+  head("Part C: Contact details");row("Preferred language",Z.lang);row("Contact number",Z.phone);row("Email",Z.email);
+  head("Part D: Qualifications");String(Z.quals||"________________").split("\n").forEach(q=>line("- "+q));
+  head("Parts E to G");line("Write: Refer to attached CV");row("Condition preventing re-appointment",Z.reapp);
+  head("Before you send it");ZTICK.forEach(([k,t])=>line(`[${Z[k]?"x":" "}] ${t}`));
+  saveFile(`Z83_answers_${(Z.ref||"post").replace(/[^\w-]+/g,"_")}.pdf`,doc.output("arraybuffer"));
+};
 })();
 
 
