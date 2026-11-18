@@ -690,6 +690,7 @@ $("#copyTxt").onclick=async()=>{
 const AGE={u18:0,"18":1,"25":2,"35":3};
 const OPPS=window.AMATHUBA_OPPS||[];
 const enc=encodeURIComponent;
+let showAllTitles=false;
 const provSlug=p=>p.toLowerCase().replace(/[^a-z]+/g,"-");
 function oppCard(o){return `<div class="opp"><h4>${esc(o.t)}</h4><p>${esc(o.d)}</p><a href="${o.u}" target="_blank" rel="noopener noreferrer">${esc(o.u.replace(/^https:\/\/(www\.)?/,"").replace(/\/$/,""))}</a><button type="button" class="trackbtn" data-track-t="${esc(o.t)}" data-track-u="${esc(o.u)}">Track this</button></div>`}
 function renderOpps(){
@@ -699,7 +700,17 @@ function renderOpps(){
   if(need.length){$("#oppIntro").textContent=`Choose your ${need.join(", ").replace(/, ([^,]*)$/," and $1")} in step 1 to see opportunities that match you.`;$("#rolesWrap").innerHTML="";$("#oppList").innerHTML="";return}
   const isQual=lv>=3, info=isQual?QUALS[q]:INTERESTS[q];
   $("#oppIntro").textContent=`Showing only what fits ${LEVELS[lv]} ${isQual?"in "+info.name:"with an interest in "+info.name}. Change your details in step 1 to update this list.`;
-  const titles=isQual?(info.titles[lv>=5?"deg":lv===4?"dip":"cert"]||[]):(info.titles[lv<=1?0:1]||[]);
+  const qTitles=isQual?(info.titles[lv>=5?"deg":lv===4?"dip":"cert"]||[]):(info.titles[lv<=1?0:1]||[]);
+  const tgt=(S.target||"").trim().replace(/\s+/g," ");
+  let titles=tgt&&showAllTitles?[tgt].concat(qTitles.filter(x=>x.toLowerCase()!==tgt.toLowerCase())):qTitles;
+  if(tgt&&!showAllTitles){
+    const base=tgt.replace(/^(junior|senior|graduate|trainee|intern)\s+/i,"");
+    const lvlWord=lv>=5?"Graduate":lv>=3?"Junior":"";
+    titles=[tgt];
+    if(lvlWord&&!new RegExp("^"+lvlWord,"i").test(tgt))titles.push(lvlWord+" "+base);
+    if(lv>=3&&!/^junior/i.test(tgt)&&lvlWord!=="Junior")titles.push("Junior "+base);
+    if(lv>=4&&!/intern/i.test(tgt))titles.push(base+" intern");
+  }
   let rh="";
   if(titles.length){
     const PL=SEL.length?SEL:[null];
@@ -709,14 +720,16 @@ function renderOpps(){
     const rows=titles.slice(0,4).map(t=>{
       const L=[
         site("Pnet",p=>`https://www.pnet.co.za/jobs/${slug(t)}${p?"/in-"+provSlug(p):""}`),
-        site("Indeed",p=>`https://za.indeed.com/jobs?q=${enc(t)}&l=${enc(p||"South Africa")}`),
-        site("Graduates24",p=>`https://www.google.com/search?q=${enc("site:graduates24.com "+t+(p?" "+p:""))}`)];
-      if(lv>=3)L.push(site("LinkedIn",p=>`https://www.linkedin.com/jobs/search/?keywords=${enc(t)}&location=${enc(p?p+", South Africa":"South Africa")}`));
+        site("Indeed",p=>`https://za.indeed.com/jobs?q=${enc('"'+t+'"')}&l=${enc(p||"South Africa")}`),
+        site("Graduates24",p=>`https://www.google.com/search?q=${enc('site:graduates24.com "'+t+'"'+(p?" "+p:""))}`)];
+      if(lv>=3)L.push(site("LinkedIn",p=>`https://www.linkedin.com/jobs/search/?keywords=${enc('"'+t+'"')}&location=${enc(p?p+", South Africa":"South Africa")}`));
       return `<div class="srow"><strong>${esc(t)}</strong><span>${L.join("")}</span></div>`}).join("");
-    rh=`<h3>Jobs that match your ${isQual?"qualification":"level"}</h3>
-    <div class="opp"><h4>See live job listings</h4><p>Each link opens today’s adverts for that job in ${SEL.length?esc(SEL.join(", ").replace(/, ([^,]*)$/," and $1")):"all of South Africa"}. Change the provinces in “Your area” above.</p>${rows}</div>`;
+    rh=`<h3>${tgt&&!showAllTitles?"Jobs you’re aiming for":`Jobs that match your ${isQual?"qualification":"level"}`}</h3>
+    <div class="opp"><h4>See live job listings</h4><p>${tgt&&!showAllTitles?`Searching for <strong style="color:var(--ink)">${esc(tgt)}</strong> jobs, the job title you’re aiming for in step 1.`:"Searching for jobs that match your qualification."} Each link opens today’s adverts in ${SEL.length?esc(SEL.join(", ").replace(/, ([^,]*)$/," and $1")):"all of South Africa"}.</p>${rows}
+    ${tgt?`<button type="button" class="btn ghost small" id="titlesToggle" style="margin-top:10px">${showAllTitles?`Only show ${esc(tgt)} jobs`:"Also show other jobs for my qualification"}</button>`:`<p class="hint" style="margin:10px 0 0">Tip: type the job title you want in step 1 (“Job title you’re aiming for”) to search only for that kind of job.</p>`}</div>`;
   }
   $("#rolesWrap").innerHTML=rh;
+  const tt=$("#titlesToggle");if(tt)tt.onclick=()=>{showAllTitles=!showAllTitles;renderOpps()};
   const fits=o=>o.levels.includes(lv)&&o.ages.includes(ag)&&(!o.prov||!SEL.length||SEL.includes(o.prov))&&(!o.notProv||!SEL.length||SEL.some(p=>p!==o.notProv));
   const specific=OPPS.filter(o=>o.quals&&o.quals.includes(q)&&fits(o));
   const general=OPPS.filter(o=>!o.quals&&fits(o));
@@ -1157,12 +1170,22 @@ function parseCv(raw){
     const m=l.match(DATE_RE);const b=isBullet(l);const next=E[i+1]||"";
     if(m&&!b){
       let head=l.replace(m[0],"").replace(/[|,(\[\]\s]+$/,"").replace(/^[\s|,)\]-]+/,"").trim();
+      const ROLEW=/\b(developer|engineer|manager|assistant|clerk|officer|intern|tutor|teacher|nurse|technician|analyst|consultant|administrator|supervisor|cashier|agent|worker|practitioner|coordinator|leader|mentor|volunteer|lecturer|specialist|designer|programmer|associate|trainee|learner)\b/i;
+      const prevE=out.exp[out.exp.length-1];
+      const looksCont=x=>/^[a-z0-9(~]/.test(x)||(/[.;]$/.test(x)&&x.split(/\s+/).length<=6);
+      if(pending.length&&prevE&&prevE.duties.length&&(ROLEW.test(head)||pending.every(looksCont))){
+        const keepIdx=pending.findIndex(x=>!looksCont(x)&&ROLEW.test(x));
+        const cont=keepIdx<0?pending:pending.slice(0,keepIdx);
+        prevE.duties[prevE.duties.length-1]+=" "+cont.join(" ");
+        pending=keepIdx<0?[]:pending.slice(keepIdx);
+      }
       const hdr=pending.join(" | ");pending=[];
       // header line holds "Title, Company"; the date line often holds the town
       let title="",org="",place="";
       const split=s=>s.split(/\s+at\s+|\s*\|\s*|\s+[-–—]\s+|,\s*/).map(x=>x.trim()).filter(Boolean);
       if(hdr){const p=split(hdr);title=p[0]||"";org=p[1]||"";place=p.slice(2).concat(head?split(head):[]).join(", ")}
       else{const p=split(head);title=p[0]||"";org=p[1]||"";place=p.slice(2).join(", ")}
+      place=place.replace(/\bEC\b/,"Eastern Cape").replace(/\bGP\b/,"Gauteng").replace(/\bKZN\b/,"KwaZulu-Natal").replace(/\bWC\b/,"Western Cape");
       curE={title:polishText(title,log),org:polishText(org,log),place:polishText(place,log),start:m[1].replace(/\b\w/,c=>c.toUpperCase()),end:/present|current|now|date/i.test(m[2])?"Present":m[2].replace(/\b\w/,c=>c.toUpperCase()),duties:[]};
       out.exp.push(curE);return}
     if(b){if(!curE){curE={title:"",org:"",place:"",start:"",end:"",duties:[]};out.exp.push(curE)}curE.duties.push(l.replace(/^[•●▪◦\-–—*·>\s]+/,""));lastLen=l.length;return}
