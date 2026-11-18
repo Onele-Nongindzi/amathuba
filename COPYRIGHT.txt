@@ -1,0 +1,6 @@
+Amathuba: CV Builder & Opportunities
+Copyright (c) 2026 Onele Nongindzi. All rights reserved.
+
+Created by Onele Nongindzi for Onele Foundation, Lusikisiki, Eastern Cape.
+No part of this software may be copied, modified or redistributed without written permission from the copyright holder.
+Third-party component: jsPDF (vendor/jspdf.umd.min.js) is used under the MIT License, (c) James Hall and contributors.
