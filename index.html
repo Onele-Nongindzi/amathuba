@@ -309,6 +309,7 @@ input.flagged,textarea.flagged{border-color:var(--bad);box-shadow:0 0 0 2px rgba
   <h2 style="margin-top:28px" id="clTitle">Cover letter</h2>
   <p class="hint">A short letter that goes with your CV. Fill in the job, choose “Write my letter”, then edit it so it sounds like you. If you pasted a job advert above, the letter uses the matching skills.</p>
   <fieldset>
+    <div id="clFromWrap" style="margin-bottom:12px" hidden><label for="clFrom">Fill in from a job you’re tracking</label><select id="clFrom"></select></div>
     <div class="grid">
       <div><label for="cl_job">Job title</label><input id="cl_job" data-cl="job" placeholder="Admin Clerk"></div>
       <div><label for="cl_org">Company or department</label><input id="cl_org" data-cl="org" placeholder="Boxer Superstores"></div>
@@ -497,7 +498,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 function show(id){
   document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===id?"true":"false"));
   document.querySelectorAll("section[role=tabpanel]").forEach(s=>s.hidden=s.id!==id);
-  if(id==="cv")renderCV(); if(id==="opps"){renderOpps();renderLocal();loadLocal()} if(id==="track")renderTrack(); if(id==="z83")renderZ83(); if(id==="iv")renderIV();
+  if(id==="cv"){renderCV();renderCLFrom()} if(id==="opps"){renderOpps();renderLocal();loadLocal()} if(id==="track")renderTrack(); if(id==="z83")renderZ83(); if(id==="iv")renderIV();
   window.scrollTo({top:0});
 }
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>show(b.dataset.tab));
@@ -783,11 +784,13 @@ function renderTrack(){
       <select id="s-${a.id}" data-status="${a.id}">${["Applied","Interview","Offer","Not successful","Withdrew"].map(s=>`<option${s===a.status?" selected":""}>${s}</option>`).join("")}</select>
       ${a.link?`<a href="${esc(a.link)}" target="_blank" rel="noopener noreferrer" style="color:var(--brand);font-weight:600;font-size:.9rem">Open advert</a>`:""}
       ${a.status==="Interview"?`<button class="btn small" type="button" data-practise="1">Practise for it</button>`:""}
+      ${OPEN.includes(a.status)?`<button class="btn ghost small" type="button" data-letter="${a.id}">Cover letter</button>`:""}
       <button class="btn ghost small" type="button" data-edit="${a.id}">Edit</button>
       <button class="btn danger small" type="button" data-del="${a.id}">Remove</button>
     </div></div>`).join("");
   document.querySelectorAll("[data-status]").forEach(s=>s.onchange=()=>{const a=APPS.find(x=>x.id===s.dataset.status);a.status=s.value;if(s.value==="Interview"&&!a.interview){openForm(a.id);toast("Add the interview date.")}saveApps();renderTrack()});
   document.querySelectorAll("[data-practise]").forEach(b=>b.onclick=()=>show("iv"));
+  document.querySelectorAll("[data-letter]").forEach(b=>b.onclick=()=>{const a=APPS.find(x=>x.id===b.dataset.letter);if(a)letterFor(a)});
   document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{openForm(b.dataset.edit);$("#trForm").scrollIntoView({behavior:"smooth"})});
   document.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{
     if(b.dataset.armed){APPS=APPS.filter(x=>x.id!==b.dataset.del);saveApps();renderTrack();toast("Application removed.")}
@@ -865,6 +868,15 @@ const saveCL=()=>{try{localStorage.setItem(CKEY,JSON.stringify(CL))}catch(e){}};
 document.querySelectorAll("[data-cl]").forEach(el=>{el.value=CL[el.dataset.cl]||"";el.addEventListener("input",()=>{CL[el.dataset.cl]=el.value;saveCL();$("#clErr").textContent=""})});
 if(CL.text){$("#clText").value=CL.text;$("#clOut").hidden=false}
 $("#clText").addEventListener("input",()=>{CL.text=$("#clText").value;saveCL()});
+const IRREG={building:"built",leading:"led",making:"made",writing:"wrote",running:"ran",teaching:"taught",selling:"sold",buying:"bought",keeping:"kept",bringing:"brought",doing:"did",getting:"got",giving:"gave",taking:"took",holding:"held",meeting:"met",setting:"set",putting:"put",sending:"sent",spending:"spent",finding:"found",understanding:"understood",thinking:"thought",telling:"told",paying:"paid",standing:"stood",winning:"won",choosing:"chose",driving:"drove",speaking:"spoke",overseeing:"oversaw",seeing:"saw"};
+const PART={wrote:"written",ran:"run",did:"done",gave:"given",took:"taken",chose:"chosen",drove:"driven",spoke:"spoken",oversaw:"overseen",saw:"seen",won:"won"};
+function pastOf(w){const l=w.toLowerCase();if(IRREG[l])return IRREG[l];if(!/ing$/.test(l))return l;let s=l.slice(0,-3);
+  if(/([bcdfgklmnprstvz])\1$/.test(s)&&!/(ll|ss|ff)$/.test(s))return s+"ed";
+  if(/[^aeiou]y$/.test(s))return s.slice(0,-1)+"ied";
+  if(/(at|iz|is|ag|ur|uc|ov|ir|rv|us|ag|in|lv|bl|pl|ib|id|ac|ng|ud|ul|ap|av|ar)$/.test(s)&&!/(ain|ign|ing)$/.test(s))return s+"ed";
+  return s+"ed"}
+function dutyAsVerb(d,current){const m=d.match(/^(\S+)(.*)$/);if(!m)return d;let v=pastOf(m[1]);if(current&&PART[v])v=PART[v];return v+m[2]}
+const an=s=>/^[aeiouAEIOU]/.test(s)?"an":"a";
 const lc1=s=>s?s.charAt(0).toLowerCase()+s.slice(1):s;
 const andList=a=>a.length<2?a.join(""):a.slice(0,-1).join(", ")+" and "+a[a.length-1];
 function writeLetter(){
@@ -882,15 +894,20 @@ function writeLetter(){
   L.push(to||"The Hiring Manager");L.push(org);L.push("");
   L.push(`Dear ${to||"Hiring Manager"},`);L.push("");
   L.push(`RE: APPLICATION FOR THE POSITION OF ${job.toUpperCase()}${CL.ref?` (REF: ${CL.ref.trim()})`:""}`);L.push("");
-  let p1=`I am writing to apply for the position of ${job} at ${org}${CL.src?`, as advertised on ${CL.src.trim()}`:""}.`;
-  if(qual&&ex.length)p1+=` I hold a ${qual.replace(/^(a|an|the) /i,"")} and have worked as ${/^[aeiou]/i.test(ex[0].title||"")?"an":"a"} ${ex[0].title||"team member"}${ex[0].org?` at ${ex[0].org}`:""}.`;
-  else if(qual)p1+=` I hold a ${qual.replace(/^(a|an|the) /i,"")} and I am ready to put what I have learned into practice.`;
+  let p1=`I am writing to apply for the position of ${job} at ${org}${CL.src?`, as advertised ${/circular|newspaper|paper|gazette|bulletin/i.test(CL.src)?"in":"on"} ${CL.src.trim()}`:""}.`;
+  if(qual&&ex.length)p1+=` I hold ${an(qual.replace(/^(a|an|the) /i,""))} ${qual.replace(/^(a|an|the) /i,"")} and ${/present/i.test(ex[0].end||"")?"currently work":"have worked"} as ${/^[aeiou]/i.test(ex[0].title||"")?"an":"a"} ${ex[0].title||"team member"}${ex[0].org?` at ${ex[0].org}`:""}.`;
+  else if(qual)p1+=` I hold ${an(qual.replace(/^(a|an|the) /i,""))} ${qual.replace(/^(a|an|the) /i,"")} and I am ready to put what I have learned into practice.`;
   else if(ex.length)p1+=` I have experience as ${/^[aeiou]/i.test(ex[0].title||"")?"an":"a"} ${ex[0].title||"team member"}${ex[0].org?` at ${ex[0].org}`:""}.`;
   p1+=" I believe I can make a real contribution to your team.";
   L.push(p1);L.push("");
-  const duties=ex.length?lines(ex[0].duties).slice(0,2).map(x=>lc1(x.replace(/\.$/,""))):[];
+  const cur=ex.length&&/present|current/i.test(ex[0].end||"");
+  const duties=ex.length?lines(ex[0].duties).slice(0,2).map(x=>dutyAsVerb(lc1(x.replace(/\.$/,"")),cur)):[];
   let p2="";
-  if(duties.length)p2=`In my ${ex[0].title?"role as "+ex[0].title:"previous role"}, I ${andList(duties)}. `;
+  const raw2=ex.length?lines(ex[0].duties).slice(0,2):[];
+  const verbish=w=>/(ing|ed)$/i.test(w)||IRREG[w.toLowerCase()]||Object.values(IRREG).includes(w.toLowerCase());
+  const allVerbs=raw2.length&&raw2.every(d=>verbish((d.match(/^\S+/)||[""])[0]));
+  if(duties.length)p2=allVerbs?`In my ${cur?"current ":""}${ex[0].title?"role as "+ex[0].title:"role"}, I ${cur?"have ":""}${andList(duties)}. `
+    :`In my ${cur?"current ":""}${ex[0].title?"role as "+ex[0].title:"role"}, my work ${cur?"includes":"included"} ${andList(raw2.map(x=>lc1(x.replace(/\.$/,""))))}. `;
   if(top.length)p2+=matched.length?`The skills your advert asks for, especially ${andList(top)}, are ones I use with confidence.`:`I bring skills in ${andList(top)}, and I learn new systems quickly.`;
   else p2+="I am reliable, quick to learn and comfortable working as part of a team.";
   L.push(p2.trim());L.push("");
@@ -1285,6 +1302,22 @@ $("#cvFile").onchange=async e=>{
 };
 $("#pasteBtn").onclick=()=>{$("#pasteWrap").hidden=!$("#pasteWrap").hidden;if(!$("#pasteWrap").hidden)$("#pasteText").focus()};
 $("#pasteGo").onclick=()=>handleText($("#pasteText").value);
+
+/* Cover letter: fill from tracked applications and the CV target */
+const WHERE_TEXT={"Government circular (DPSA)":"the Public Service Vacancy Circular","Municipality notice":"the municipal notice board","Word of mouth":"","Other":""};
+function setCL(o){["job","org","ref","src"].forEach(k=>{if(o[k]!==undefined){CL[k]=o[k];const el=document.querySelector(`[data-cl="${k}"]`);if(el)el.value=o[k]}});saveCL()}
+function letterFor(a){
+  setCL({job:a.job||"",org:a.org||"",ref:a.ref||"",src:WHERE_TEXT[a.where]!==undefined?WHERE_TEXT[a.where]:(a.where||"")});
+  show("cv");setTimeout(()=>{$("#clTitle").scrollIntoView({behavior:"smooth",block:"start"});$("#clGen").focus({preventScroll:true})},50);
+  toast("Filled in from your application. Tap “Write my letter”.");
+}
+function renderCLFrom(){
+  const open=APPS.filter(a=>OPEN.includes(a.status)&&(a.job||a.org));
+  $("#clFromWrap").hidden=!open.length;
+  $("#clFrom").innerHTML=`<option value="">Choose a job…</option>`+open.map(a=>`<option value="${a.id}">${esc([a.job,a.org].filter(Boolean).join(" at "))}</option>`).join("");
+  if(!(CL.job||"").trim()&&S.target){setCL({job:S.target})}
+}
+$("#clFrom").onchange=e=>{const a=APPS.find(x=>x.id===e.target.value);if(a){setCL({job:a.job||"",org:a.org||"",ref:a.ref||"",src:WHERE_TEXT[a.where]!==undefined?WHERE_TEXT[a.where]:(a.where||"")});toast("Filled in. Tap “Write my letter”.")}};
 })();
 
 
