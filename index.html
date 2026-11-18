@@ -166,6 +166,18 @@ textarea{min-height:84px;resize:vertical}
 .report .found{margin:6px 0 10px;padding:8px 12px;border-radius:8px;background:var(--brand-pale);font-size:.9rem}
 .report .found p{margin:2px 0}
 input.flagged,textarea.flagged{border-color:var(--bad);box-shadow:0 0 0 2px rgba(179,38,30,.15)}
+.risk{border-radius:12px;padding:14px 16px;margin-top:14px}
+.risk h4{margin:0 0 6px;font-size:1.05rem}
+.risk ul{margin:6px 0 0 18px;padding:0}.risk li{margin-bottom:4px}
+.risk.high{background:#fde8e6;color:#8a1c14}.risk.med{background:var(--gold-pale);color:var(--ink)}.risk.low{background:#e3f4ea;color:#1d6b3d}
+:root[data-theme="dark"] .risk.high{background:#3a1d1a;color:#ffb4ab}:root[data-theme="dark"] .risk.low{background:#1d3a2a;color:#9fe0b8}
+.calbox{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;padding:10px;border:1px dashed var(--line);border-radius:10px;width:100%}
+.doc{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line)}
+.doc label{display:flex;gap:10px;align-items:flex-start;font-weight:500;margin:0;cursor:pointer;flex:1 1 220px}
+.doc input[type=checkbox]{width:20px;height:20px;margin:2px 0 0;flex:none;accent-color:var(--brand)}
+.doc small{display:block;color:var(--soft);font-weight:400}
+.doc .cert{display:flex;gap:6px;align-items:center;font-size:.85rem;color:var(--soft)}
+.doc .cert input{width:auto;padding:5px 8px;font-size:.85rem}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);
   padding:10px 16px;border-radius:10px;font-size:.92rem;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
 .toast.show{opacity:1}
@@ -191,6 +203,7 @@ input.flagged,textarea.flagged{border-color:var(--bad);box-shadow:0 0 0 2px rgba
   <button role="tab" aria-selected="false" data-tab="track"><span class="n">4</span><span class="t">My applications</span></button>
   <button role="tab" aria-selected="false" data-tab="z83"><span class="n">5</span><span class="t">Z83 helper</span></button>
   <button role="tab" aria-selected="false" data-tab="iv"><span class="n">6</span><span class="t">Interview practice</span></button>
+  <button role="tab" aria-selected="false" data-tab="scam"><span class="n">7</span><span class="t">Scam checker</span></button>
 </nav>
 
 <!-- STEP 1 -->
@@ -387,6 +400,11 @@ input.flagged,textarea.flagged{border-color:var(--bad);box-shadow:0 0 0 2px rgba
     <button type="button" data-f="closed" aria-pressed="false">Finished</button>
   </div>
   <div id="trList"></div>
+
+  <h3 style="margin-top:24px">Documents ready</h3>
+  <p class="hint">Tick what you have, so you’re ready when an employer asks. Amathuba doesn’t store the documents, only your ticks and dates.</p>
+  <div id="docList"></div>
+  <p class="hint" id="docTip"></p>
 </section>
 
 <!-- STEP 5 -->
@@ -470,6 +488,19 @@ input.flagged,textarea.flagged{border-color:var(--bad);box-shadow:0 0 0 2px rgba
   <h3 style="margin-top:20px">Interview day checklist</h3>
   <ul class="checks" id="ivCheck"></ul>
 </section>
+
+<!-- STEP 7 -->
+<section id="scam" role="tabpanel" hidden>
+  <h2>Scam checker</h2>
+  <p class="hint">Got a job offer by WhatsApp, SMS, email or Facebook? Paste it here and Amathuba will look for the warning signs of a job scam. Nothing you paste leaves this phone.</p>
+  <label for="scamText">Paste the job advert or message</label>
+  <textarea id="scamText" style="min-height:160px" placeholder="Paste the full message, including any email address, phone number or link"></textarea>
+  <p class="err" id="scamErr" role="alert"></p>
+  <div class="btns"><button class="btn" type="button" id="scamGo">Check this message</button><button class="btn ghost" type="button" id="scamClear">Clear</button></div>
+  <div id="scamOut" aria-live="polite"></div>
+  <div class="opp" style="margin-top:16px"><h4>Rules that keep you safe</h4>
+    <p style="margin:0">Real employers and government never ask you to pay for a job, training, uniforms or “admin”. Never send your ID, bank details, PIN or a one-time PIN (OTP) before you have checked the job is real. Look the company up yourself and call its official number, not the number in the message. Government jobs are advertised on gov.za websites and in the Public Service Vacancy Circular.</p></div>
+</section>
 <footer style="border-top:1px solid var(--line);margin-top:30px;padding-top:16px;color:var(--soft);font-size:.88rem">
   <p style="margin:0 0 4px">Amathuba was created by Onele Nongindzi for Onele Foundation.</p>
   <p style="margin:0 0 4px">Your information is saved only on this device. It is never sent to Onele Foundation or anyone else.</p>
@@ -498,7 +529,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 function show(id){
   document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===id?"true":"false"));
   document.querySelectorAll("section[role=tabpanel]").forEach(s=>s.hidden=s.id!==id);
-  if(id==="cv"){renderCV();renderCLFrom()} if(id==="opps"){renderOpps();renderLocal();loadLocal()} if(id==="track")renderTrack(); if(id==="z83")renderZ83(); if(id==="iv")renderIV();
+  if(id==="cv"){renderCV();renderCLFrom()} if(id==="opps"){renderOpps();renderLocal();loadLocal()} if(id==="track"){renderTrack();renderDocs()} if(id==="z83")renderZ83(); if(id==="iv")renderIV();
   window.scrollTo({top:0});
 }
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>show(b.dataset.tab));
@@ -798,11 +829,13 @@ function renderTrack(){
       ${a.link?`<a href="${esc(a.link)}" target="_blank" rel="noopener noreferrer" style="color:var(--brand);font-weight:600;font-size:.9rem">Open advert</a>`:""}
       ${a.status==="Interview"?`<button class="btn small" type="button" data-practise="1">Practise for it</button>`:""}
       ${OPEN.includes(a.status)?`<button class="btn ghost small" type="button" data-letter="${a.id}">Cover letter</button>`:""}
+      ${OPEN.includes(a.status)&&((a.close&&days(a.close)>=0)||(a.interview&&days(a.interview)>=0))?`<button class="btn ghost small" type="button" data-cal="${a.id}">Remind me</button>`:""}
       <button class="btn ghost small" type="button" data-edit="${a.id}">Edit</button>
       <button class="btn danger small" type="button" data-del="${a.id}">Remove</button>
     </div></div>`).join("");
   document.querySelectorAll("[data-status]").forEach(s=>s.onchange=()=>{const a=APPS.find(x=>x.id===s.dataset.status);a.status=s.value;if(s.value==="Interview"&&!a.interview){openForm(a.id);toast("Add the interview date.")}saveApps();renderTrack()});
   document.querySelectorAll("[data-practise]").forEach(b=>b.onclick=()=>show("iv"));
+  document.querySelectorAll("[data-cal]").forEach(b=>b.onclick=()=>{const a=APPS.find(x=>x.id===b.dataset.cal);if(a)calMenu(a,b)});
   document.querySelectorAll("[data-letter]").forEach(b=>b.onclick=()=>{const a=APPS.find(x=>x.id===b.dataset.letter);if(a)letterFor(a)});
   document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{openForm(b.dataset.edit);$("#trForm").scrollIntoView({behavior:"smooth"})});
   document.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{
@@ -1341,6 +1374,105 @@ function renderCLFrom(){
   if(!(CL.job||"").trim()&&S.target){setCL({job:S.target})}
 }
 $("#clFrom").onchange=e=>{const a=APPS.find(x=>x.id===e.target.value);if(a){setCL({job:a.job||"",org:a.org||"",ref:a.ref||"",src:WHERE_TEXT[a.where]!==undefined?WHERE_TEXT[a.where]:(a.where||"")});toast("Filled in. Tap “Write my letter”.")}};
+
+/* Scam checker */
+const SCAM=[
+ {lvl:3,re:/\b(pay|paying|payment|deposit|send|transfer|eft|cash ?send|e-?wallet|airtime)\b[^.!?\n]{0,60}\b(fee|fees|r ?\d[\d ,]*|rand|money|amount)\b|\b(training|registration|admin|administration|application|processing|uniform|placement|medical|police clearance|joining|booking|security)\s+fee/i,msg:"Asks you to pay money (a fee, deposit or airtime). Real employers never charge you for a job or training."},
+ {lvl:3,re:/\b(bank(ing)? details|bank card|account number|card number|pin\b|otp|one[- ]time pin|cvv|password)\b/i,msg:"Asks for bank details, a PIN, OTP or password. Never share these for a job."},
+ {lvl:2,re:/\b(copy of (your )?id|id (copy|number)|identity (document|number)|send (us )?(your )?id)\b/i,msg:"Asks for your ID straight away. Only send ID copies once you have checked the job is real, and never with bank details."},
+ {lvl:2,re:/\b(guaranteed|100% placement|no interview|start immediately without|everyone (qualifies|is accepted))\b/i,msg:"Promises a guaranteed job or no interview. Real jobs have a selection process."},
+ {lvl:2,re:/\b(earn|make)\s+(up to\s+)?r ?\d[\d ,]{3,}\s*(per|a|every)\s*(day|week)\b|\bwork from home\b[^.\n]{0,60}\bearn\b/i,msg:"Promises big, easy earnings. If it sounds too good to be true, it usually is."},
+ {lvl:1,re:/\b(urgent(ly)?|today only|limited (spaces|positions)|first \d+ (people|applicants)|closing (today|tonight)|hurry)\b/i,msg:"Puts pressure on you to act fast. Scammers rush people so they don’t check."},
+ {lvl:1,re:/\b(recruit|invite|bring)\b[^.\n]{0,40}\b(friends|people|members)\b|\bjoin our team and earn\b/i,msg:"Asks you to recruit other people. This is often a pyramid scheme."},
+ {lvl:1,re:/(bit\.ly|tinyurl|t\.co|cutt\.ly|rb\.gy|shorturl)/i,msg:"Uses a shortened link that hides where it goes. Don’t open it; find the company’s website yourself."},
+ {lvl:1,re:/(whatsapp (only|your cv|us on)|wa\.me\/|chat\.whatsapp)/i,msg:"Only uses WhatsApp to apply. Real companies usually have an official email, website or office."},
+ {lvl:1,re:/\b(hotel|guest ?house|private residence)\b[^.\n]{0,40}\b(interview|meeting|training)\b|\b(interview|training)\b[^.\n]{0,40}\b(hotel|guest ?house)\b/i,msg:"Interview or training at a hotel or private place. Be careful and never go alone."},
+];
+const GOV=/\b(government|department of|dept\.? of|municipality|saps|police service|sandf|sassa|eskom|transnet|prasa|public service|correctional services|home affairs)\b/i;
+const BIG=/\b(shoprite|checkers|pick ?n ?pay|woolworths|spar|boxer|game|makro|mtn|vodacom|telkom|absa|fnb|nedbank|standard bank|capitec|sasol|anglo|coca-?cola|kfc|mcdonald)/i;
+function checkScam(t){
+  const found=[];let score=0;
+  SCAM.forEach(r=>{if(r.re.test(t)){found.push([r.lvl,r.msg]);score+=r.lvl}});
+  const emails=(t.match(/[\w.+-]+@([\w-]+\.)+[\w-]+/g)||[]).map(e=>e.toLowerCase());
+  const freeMail=emails.filter(e=>/@(gmail|yahoo|ymail|outlook|hotmail|live|icloud|webmail)\./.test(e));
+  if(GOV.test(t)&&emails.length&&emails.some(e=>!/\.gov\.za$|\.mil\.za$/.test(e))){found.push([3,"Claims to be a government job, but the email address isn’t a gov.za address. Government departments use official gov.za emails."]);score+=3}
+  else if(freeMail.length&&(BIG.test(t)||GOV.test(t))){found.push([2,`Claims to be from a big company but uses a free email address (${freeMail[0]}). Big employers use their own company email.`]);score+=2}
+  else if(freeMail.length){found.push([1,`Uses a free email address (${freeMail[0]}). Check the company is real before you send anything.`]);score+=1}
+  if(/\b(learnership|internship)\b/i.test(t)&&/\b(fee|pay|deposit)\b/i.test(t)){found.push([3,"A learnership or internship that asks for payment. Real learnerships are free and often pay you a stipend."]);score+=3}
+  const lvl=found.some(f=>f[0]>=3)||score>=5?"high":score>=2?"med":"low";
+  return {lvl,found:found.sort((a,b)=>b[0]-a[0])};
+}
+$("#scamText").addEventListener("input",()=>$("#scamErr").textContent="");
+$("#scamGo").onclick=()=>{
+  const t=$("#scamText").value.trim();
+  if(t.length<20){$("#scamErr").textContent="Paste the full message first.";return}
+  const r=checkScam(t);
+  const head={high:"High risk: this looks like a scam",med:"Be careful: some warning signs",low:"No common warning signs found"}[r.lvl];
+  const advice={high:"Do not pay anything or send your documents. Block the sender and warn others. You can report it at your nearest police station.",
+    med:"Check carefully before you reply. Find the company’s official website or number yourself and confirm the job exists.",
+    low:"That doesn’t prove it’s real. Still check the company yourself, and never pay or share bank details."}[r.lvl];
+  $("#scamOut").innerHTML=`<div class="risk ${r.lvl}"><h4>${head}</h4>${r.found.length?`<ul>${r.found.map(f=>`<li>${esc(f[1])}</li>`).join("")}</ul>`:""}<p style="margin:8px 0 0"><strong>What to do:</strong> ${advice}</p></div>`;
+};
+$("#scamClear").onclick=()=>{$("#scamText").value="";$("#scamOut").innerHTML="";$("#scamText").focus()};
+
+/* Calendar reminders */
+const pad=n=>String(n).padStart(2,"0");
+const ymd=d=>`${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
+function icsFor(title,dateStr,desc,alarms){
+  const d=toD(dateStr),n=new Date(d);n.setDate(n.getDate()+1);
+  const stamp=new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d+Z$/,"Z");
+  const escI=s=>String(s||"").replace(/\\/g,"\\\\").replace(/[,;]/g,m=>"\\"+m).replace(/\n/g,"\\n");
+  return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Onele Foundation//Amathuba//EN","CALSCALE:GREGORIAN","BEGIN:VEVENT",
+    `UID:${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}@amathuba`,`DTSTAMP:${stamp}`,
+    `DTSTART;VALUE=DATE:${ymd(d)}`,`DTEND;VALUE=DATE:${ymd(n)}`,`SUMMARY:${escI(title)}`,`DESCRIPTION:${escI(desc)}`,
+    ...alarms.flatMap(t=>["BEGIN:VALARM","ACTION:DISPLAY",`DESCRIPTION:${escI(title)}`,`TRIGGER:${t}`,"END:VALARM"]),
+    "END:VEVENT","END:VCALENDAR"].join("\r\n");
+}
+function gcal(title,dateStr,desc){const d=toD(dateStr),n=new Date(d);n.setDate(n.getDate()+1);return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${enc(title)}&dates=${ymd(d)}/${ymd(n)}&details=${enc(desc)}`}
+function calMenu(a,btn){
+  const card=btn.closest(".app");const old=card.querySelector(".calbox");if(old){old.remove();return}
+  const name=[a.job,a.org].filter(Boolean).join(" at ")||"Job application";
+  const desc=[a.ref?"Reference: "+a.ref:"",a.link||"","Added by Amathuba"].filter(Boolean).join("\n");
+  const items=[];
+  if(a.close&&days(a.close)>=0)items.push({k:"close",t:`Closing date: ${name}`,d:a.close,al:["-P2D","-PT12H"],label:`Closing date (${fmt(a.close)})`});
+  if(a.interview&&days(a.interview)>=0)items.push({k:"iv",t:`Interview: ${name}`,d:a.interview,al:["-P1D","-PT14H"],label:`Interview (${fmt(a.interview)})`});
+  const box=document.createElement("div");box.className="calbox";
+  box.innerHTML=items.map((x,i)=>`<div style="width:100%;font-size:.9rem;font-weight:600">${esc(x.label)}</div>
+    <button class="btn small" type="button" data-ics="${i}">Add to my calendar</button>
+    <a class="btn ghost small" style="text-decoration:none" href="${gcal(x.t,x.d,desc)}" target="_blank" rel="noopener noreferrer">Google Calendar</a>`).join("")+
+    `<p class="hint" style="margin:4px 0 0;font-size:.82rem">You’ll get a reminder ${items.some(x=>x.k==="close")?"two days before the closing date":"the day before"}. On iPhone, open the downloaded file to add it.</p>`;
+  card.appendChild(box);
+  box.querySelectorAll("[data-ics]").forEach(b=>b.onclick=()=>{const x=items[+b.dataset.ics];const blob=new Blob([icsFor(x.t,x.d,desc,x.al)],{type:"text/calendar"});
+    const url=URL.createObjectURL(blob);const l=document.createElement("a");l.href=url;l.download=(x.k==="iv"?"interview":"closing-date")+".ics";document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);toast("Reminder file saved. Open it to add it to your calendar.")});
+}
+
+/* Document checklist */
+const DKEY="amathuba-docs-v1";
+let DOCS={};try{DOCS=JSON.parse(localStorage.getItem(DKEY)||"{}")}catch(e){DOCS={}}
+const saveDocs=()=>{try{localStorage.setItem(DKEY,JSON.stringify(DOCS))}catch(e){}};
+function docItems(){
+  const lv=S.level===""?-1:+S.level,q=S.qual||"";
+  const L=[["id","ID document or smart ID card","Keep a few clear copies.",true],
+    ["cv","Up-to-date CV","Printed copies and a PDF on your phone.",false],
+    ["matric","Matric certificate (or highest school report)","Ask your school or the Department of Education if you lost it.",true]];
+  if(lv>=3)L.push(["qual","Tertiary qualification certificate(s) and academic record","From your college or university.",true]);
+  L.push(["addr","Proof of address","A recent municipal account, bank letter or a letter from your ward councillor or traditional leader.",false]);
+  if(S.licence&&S.licence.trim())L.push(["lic","Driver’s licence","",true]);
+  if(["civil","elec","mech","nurse","teach","socwork","law","acc"].includes(q))L.push(["reg","Professional registration proof","For example ECSA, SANC, SACE, SACSSP or SAICA.",true]);
+  L.push(["z83","Blank new Z83 form (for government jobs)","Download it free from dpsa.gov.za.",false],["refs","Two or three references who agreed to be contacted","Check their phone numbers still work.",false]);
+  return L;
+}
+function renderDocs(){
+  const L=docItems();
+  $("#docList").innerHTML=L.map(([k,t,sub,cert])=>{const d=DOCS[k]||{};const age=d.cert?-days(d.cert):null;
+    return `<div class="doc"><label><input type="checkbox" data-doc="${k}"${d.have?" checked":""}><span>${esc(t)}${sub?`<small>${esc(sub)}</small>`:""}</span></label>
+    ${cert?`<span class="cert"><label for="c-${k}" style="font-weight:400;flex:none;cursor:default">Copies certified on</label><input type="date" id="c-${k}" data-cert="${k}" value="${d.cert||""}">${age!==null&&age>90?`<span style="color:var(--bad)">${age} days ago</span>`:age!==null?`<span>${age} day${age===1?"":"s"} ago</span>`:""}</span>`:""}</div>`}).join("");
+  const have=L.filter(([k])=>(DOCS[k]||{}).have).length;
+  const old=L.filter(([k,,,c])=>c&&(DOCS[k]||{}).cert&&-days(DOCS[k].cert)>90).length;
+  $("#docTip").innerHTML=`You have ${have} of ${L.length} ready.${old?` <span style="color:var(--bad)">${old} certified cop${old===1?"y is":"ies are"} over 3 months old.</span>`:""} Only certify copies when you’re shortlisted or the advert asks for them. Many employers want copies certified in the last 3 to 6 months, and police stations certify copies for free.`;
+  document.querySelectorAll("[data-doc]").forEach(c=>c.onchange=()=>{DOCS[c.dataset.doc]=Object.assign(DOCS[c.dataset.doc]||{},{have:c.checked});saveDocs();renderDocs()});
+  document.querySelectorAll("[data-cert]").forEach(c=>c.onchange=()=>{DOCS[c.dataset.cert]=Object.assign(DOCS[c.dataset.cert]||{},{cert:c.value,have:true});saveDocs();renderDocs()});
+}
 })();
 
 
