@@ -1,6 +1,6 @@
 // Amathuba offline support: caches the app so it opens without data after the first visit.
 // Change VERSION whenever you update any file, so phones fetch the new version.
-const VERSION = "amathuba-v11";
+const VERSION = "amathuba-v12";
 const FILES = ["./", "index.html", "js/opportunities.js", "vendor/jspdf.umd.min.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener("activate", e => {
