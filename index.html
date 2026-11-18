@@ -19,6 +19,8 @@
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
+:root[data-theme="dark"] .st-Offer{background:#1d3a2a;color:#9fe0b8}
+:root[data-theme="dark"] .flag.urgent{background:#3a1d1a;color:#ffb4ab}
 :root[data-theme="dark"]{
   --paper:#1e1824; --ground:#141017; --ink:#ece6f2; --soft:#b3a8bf; --line:#352b3e;
   --brand:#c3a6e6; --brand-ink:#1a0f24; --brand-pale:#2a2133; --gold:#e8c04d; --gold-pale:#2e2614;
@@ -114,6 +116,27 @@ textarea{min-height:84px;resize:vertical}
 .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 6px}
 .theme-btn{font:inherit;font-size:.88rem;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:20px;padding:6px 12px;cursor:pointer;flex:none}
 .theme-btn svg{width:16px;height:16px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 14px}
+.stat{background:var(--brand-pale);border-radius:12px;padding:10px 12px}
+.stat b{display:block;font-size:1.4rem;line-height:1.2;color:var(--brand)}
+.stat span{font-size:.82rem;color:var(--soft)}
+.app{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.app-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.app h4{margin:0;font-size:1rem}
+.app .meta{margin:2px 0 0;font-size:.9rem;color:var(--soft)}
+.pill{display:inline-block;border-radius:20px;padding:2px 10px;font-size:.8rem;font-weight:600;white-space:nowrap}
+.st-Applied{background:var(--brand-pale);color:var(--brand)}
+.st-Interview{background:var(--gold-pale);color:var(--ink)}
+.st-Offer{background:#e3f4ea;color:#1d6b3d}
+.st-Notsuccessful,.st-Withdrew{background:var(--line);color:var(--soft)}
+.flag{margin:8px 0 0;font-size:.88rem;padding:6px 10px;border-radius:8px;background:var(--gold-pale)}
+.flag.urgent{background:#fde8e6;color:#8a1c14}
+.app-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
+.app-actions select{width:auto;padding:5px 8px;font-size:.88rem}
+.err{color:var(--bad);font-size:.9rem;margin:8px 0 0;min-height:1em}
+.trackbtn{font:inherit;font-size:.85rem;margin-left:10px;border:1px solid var(--brand);background:transparent;color:var(--brand);border-radius:20px;padding:2px 10px;cursor:pointer}
+@media (max-width:560px){ nav{flex-wrap:wrap} nav button{flex:1 1 45%} .stats{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);
   padding:10px 16px;border-radius:10px;font-size:.92rem;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
 .toast.show{opacity:1}
@@ -136,6 +159,7 @@ textarea{min-height:84px;resize:vertical}
   <button role="tab" aria-selected="true" data-tab="details"><span class="n">1</span><span class="t">Your details</span></button>
   <button role="tab" aria-selected="false" data-tab="cv"><span class="n">2</span><span class="t">Your CV</span></button>
   <button role="tab" aria-selected="false" data-tab="opps"><span class="n">3</span><span class="t">Where to apply</span></button>
+  <button role="tab" aria-selected="false" data-tab="track"><span class="n">4</span><span class="t">My applications</span></button>
 </nav>
 
 <!-- STEP 1 -->
@@ -245,6 +269,40 @@ textarea{min-height:84px;resize:vertical}
   <div class="note"><strong>Stay safe:</strong> real employers and government programmes never ask you to pay to apply, to get a job, or for “training fees” before you start. Use the official websites below and report anyone who asks for money.</div>
   <p class="hint">Links and age rules change often. Always check the details on the official website before applying.</p>
 </section>
+
+<!-- STEP 4 -->
+<section id="track" role="tabpanel" hidden>
+  <h2>My applications</h2>
+  <p class="hint">Keep track of every job you apply for, so you know what’s closing soon and when to follow up. Saved on this device only.</p>
+  <div class="stats" id="trStats"></div>
+  <div class="btns" style="margin-top:0"><button class="btn" type="button" id="trNew">Add an application</button></div>
+
+  <fieldset id="trForm" hidden><legend id="trFormTitle">Add an application</legend>
+    <div class="grid">
+      <div><label for="trJob">Job title</label><input id="trJob" placeholder="Admin Clerk"></div>
+      <div><label for="trOrg">Company or department</label><input id="trOrg" placeholder="Ingquza Hill Municipality"></div>
+      <div><label for="trWhere">Where you found it</label>
+        <select id="trWhere"><option>Pnet</option><option>Indeed</option><option>Graduates24</option><option>LinkedIn</option><option>Government circular (DPSA)</option><option>SA Youth</option><option>ESSA</option><option>Municipality notice</option><option>Word of mouth</option><option>Other</option></select></div>
+      <div><label for="trStatus">Status</label>
+        <select id="trStatus"><option>Applied</option><option>Interview</option><option>Offer</option><option>Not successful</option><option>Withdrew</option></select></div>
+      <div><label for="trApplied">Date applied</label><input id="trApplied" type="date"></div>
+      <div><label for="trClose">Closing date <small>(optional)</small></label><input id="trClose" type="date"></div>
+      <div><label for="trInterview">Interview date <small>(optional)</small></label><input id="trInterview" type="date"></div>
+      <div><label for="trLink">Link to the advert <small>(optional)</small></label><input id="trLink" type="url" placeholder="https://"></div>
+      <div style="grid-column:1/-1"><label for="trRef">Reference number <small>(government posts)</small></label><input id="trRef" placeholder="e.g. ECDOE/2026/045"></div>
+      <div style="grid-column:1/-1"><label for="trNotes">Notes</label><textarea id="trNotes" placeholder="Who you spoke to, documents you sent, follow-up dates"></textarea></div>
+    </div>
+    <p class="err" id="trErr" role="alert"></p>
+    <div class="btns"><button class="btn" type="button" id="trSave">Save application</button><button class="btn ghost" type="button" id="trCancel">Cancel</button></div>
+  </fieldset>
+
+  <div class="seg" role="group" aria-label="Show applications" id="trFilter">
+    <button type="button" data-f="open" aria-pressed="true">In progress</button>
+    <button type="button" data-f="all" aria-pressed="false">All</button>
+    <button type="button" data-f="closed" aria-pressed="false">Finished</button>
+  </div>
+  <div id="trList"></div>
+</section>
 <footer style="border-top:1px solid var(--line);margin-top:30px;padding-top:16px;color:var(--soft);font-size:.88rem">
   <p style="margin:0 0 4px">Amathuba was created by Onele Nongindzi for Onele Foundation.</p>
   <p style="margin:0 0 4px">Your information is saved only on this device. It is never sent to Onele Foundation or anyone else.</p>
@@ -272,7 +330,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 function show(id){
   document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===id?"true":"false"));
   document.querySelectorAll("section[role=tabpanel]").forEach(s=>s.hidden=s.id!==id);
-  if(id==="cv")renderCV(); if(id==="opps")renderOpps();
+  if(id==="cv")renderCV(); if(id==="opps")renderOpps(); if(id==="track")renderTrack();
   window.scrollTo({top:0});
 }
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>show(b.dataset.tab));
@@ -465,7 +523,7 @@ const AGE={u18:0,"18":1,"25":2,"35":3};
 const OPPS=window.AMATHUBA_OPPS||[];
 const enc=encodeURIComponent;
 let searchLoc="ec";
-function oppCard(o){return `<div class="opp"><h4>${esc(o.t)}</h4><p>${esc(o.d)}</p><a href="${o.u}" target="_blank" rel="noopener noreferrer">${esc(o.u.replace(/^https:\/\/(www\.)?/,"").replace(/\/$/,""))}</a></div>`}
+function oppCard(o){return `<div class="opp"><h4>${esc(o.t)}</h4><p>${esc(o.d)}</p><a href="${o.u}" target="_blank" rel="noopener noreferrer">${esc(o.u.replace(/^https:\/\/(www\.)?/,"").replace(/\/$/,""))}</a><button type="button" class="trackbtn" data-track-t="${esc(o.t)}" data-track-u="${esc(o.u)}">Track this</button></div>`}
 function renderOpps(){
   const lv=S.level===""?null:+S.level, ag=S.age===""?null:AGE[S.age], q=S.qual;
   $("#ladder").innerHTML=LEVELS.map((n,i)=>`<div class="rung ${lv===null?"":i<lv?"done":i===lv?"here":""}">${esc(n)}</div>`).join("");
@@ -506,8 +564,73 @@ function renderOpps(){
   if(ag===0)h=`<div class="note">Most jobs and programmes start at 18. For now, focus on finishing school and on study funding.</div>`+h;
   if(lv<=1)h+=`<div class="note">Finishing matric, or an NC(V) at a TVET college, opens many more doors.</div>`;
   $("#oppList").innerHTML=h;
+  document.querySelectorAll("[data-track-t]").forEach(b=>b.onclick=()=>{show("track");openForm(null,{job:"",org:b.dataset.trackT,link:b.dataset.trackU})});
 }
+/* Application tracker */
+const TKEY="amathuba-apps-v1";
+let APPS=[];try{APPS=JSON.parse(localStorage.getItem(TKEY)||"[]")}catch(e){APPS=[]}
+let trFilter="open",editing=null;
+const OPEN=["Applied","Interview","Offer"];
+function saveApps(){try{localStorage.setItem(TKEY,JSON.stringify(APPS))}catch(e){toast("Couldn’t save on this device.")}}
+const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d};
+const toD=s=>s?new Date(s+"T00:00:00"):null;
+const days=s=>Math.round((toD(s)-today())/864e5);
+const fmt=s=>s?toD(s).toLocaleDateString("en-ZA",{day:"numeric",month:"short",year:"numeric"}):"";
+const F=["Job","Org","Where","Status","Applied","Close","Interview","Link","Ref","Notes"];
+function openForm(id,pre){
+  editing=id; const a=id?APPS.find(x=>x.id===id):Object.assign({where:"Pnet",status:"Applied",applied:new Date().toISOString().slice(0,10)},pre||{});
+  const map={Job:"job",Org:"org",Where:"where",Status:"status",Applied:"applied",Close:"close",Interview:"interview",Link:"link",Ref:"ref",Notes:"notes"};
+  F.forEach(k=>{const el=$("#tr"+k);el.value=a[map[k]]||(el.tagName==="SELECT"?el.options[0].value:"")});
+  $("#trFormTitle").textContent=id?"Edit application":"Add an application";$("#trErr").textContent="";
+  $("#trForm").hidden=false;$("#trJob").focus();
+}
+$("#trNew").onclick=()=>openForm(null);
+$("#trCancel").onclick=()=>{$("#trForm").hidden=true};
+["trJob","trOrg"].forEach(i=>$("#"+i).addEventListener("input",()=>$("#trErr").textContent=""));
+$("#trSave").onclick=()=>{
+  const v=k=>$("#tr"+k).value.trim();
+  if(!v("Job")&&!v("Org")){$("#trErr").textContent="Enter the job title or the company first.";return}
+  const rec={job:v("Job"),org:v("Org"),where:v("Where"),status:v("Status"),applied:v("Applied"),close:v("Close"),interview:v("Interview"),link:v("Link"),ref:v("Ref"),notes:v("Notes")};
+  if(editing){Object.assign(APPS.find(x=>x.id===editing),rec);toast("Application updated.")}
+  else{APPS.unshift(Object.assign({id:Date.now().toString(36)},rec));toast("Application added.")}
+  saveApps();$("#trForm").hidden=true;renderTrack();
+};
+document.querySelectorAll("#trFilter button").forEach(b=>b.onclick=()=>{trFilter=b.dataset.f;renderTrack()});
+function flags(a){
+  const out=[];
+  if(a.interview&&days(a.interview)>=0&&days(a.interview)<=7)out.push(["urgent",days(a.interview)===0?"Interview is today. Good luck!":`Interview in ${days(a.interview)} day${days(a.interview)===1?"":"s"} (${fmt(a.interview)}). Prepare your documents.`]);
+  if(a.status==="Applied"&&a.close&&days(a.close)<0&&days(a.close)>=-90)out.push(["",`Closed ${-days(a.close)} days ago. Government posts often take up to 3 months to respond.`]);
+  if(a.status==="Applied"&&a.applied&&days(a.applied)<=-14&&(!a.close||days(a.close)<0))out.push(["",`Applied ${-days(a.applied)} days ago with no answer. Consider a polite follow-up email or call.`]);
+  return out;
+}
+function renderTrack(){
+  document.querySelectorAll("#trFilter button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.f===trFilter?"true":"false"));
+  const c=s=>APPS.filter(a=>a.status===s).length;
+  $("#trStats").innerHTML=[[APPS.length,"Applied in total"],[c("Applied"),"Waiting"],[c("Interview"),"Interviews"],[c("Offer"),"Offers"]].map(([n,l])=>`<div class="stat"><b>${n}</b><span>${l}</span></div>`).join("");
+  let list=APPS.filter(a=>trFilter==="all"||(trFilter==="open"?OPEN.includes(a.status):!OPEN.includes(a.status)));
+  list.sort((x,y)=>{const ix=x.interview&&days(x.interview)>=0?days(x.interview):999,iy=y.interview&&days(y.interview)>=0?days(y.interview):999;return ix-iy||(y.applied||"").localeCompare(x.applied||"")});
+  if(!list.length){$("#trList").innerHTML=APPS.length?`<p class="hint">Nothing here. Try another filter.</p>`:`<div class="opp"><h4>Start your list</h4><p>Each time you apply for a job, add it here. You can also tap “Track this” on any opportunity in step 3.</p></div>`;return}
+  $("#trList").innerHTML=list.map(a=>`<div class="app">
+    <div class="app-top"><div><h4>${esc(a.job||"Untitled job")}</h4><p class="meta">${esc([a.org,a.where].filter(Boolean).join(" · "))}</p></div><span class="pill st-${a.status.replace(/\s/g,"")}">${esc(a.status)}</span></div>
+    <p class="meta">${a.applied?"Applied "+fmt(a.applied):""}${a.close?" · Closes "+fmt(a.close):""}${a.ref?" · Ref "+esc(a.ref):""}</p>
+    ${a.notes?`<p class="meta" style="color:var(--ink)">${esc(a.notes)}</p>`:""}
+    ${flags(a).map(([k,t])=>`<p class="flag ${k}">${esc(t)}</p>`).join("")}
+    <div class="app-actions">
+      <label class="sr-only" for="s-${a.id}">Status</label>
+      <select id="s-${a.id}" data-status="${a.id}">${["Applied","Interview","Offer","Not successful","Withdrew"].map(s=>`<option${s===a.status?" selected":""}>${s}</option>`).join("")}</select>
+      ${a.link?`<a href="${esc(a.link)}" target="_blank" rel="noopener noreferrer" style="color:var(--brand);font-weight:600;font-size:.9rem">Open advert</a>`:""}
+      <button class="btn ghost small" type="button" data-edit="${a.id}">Edit</button>
+      <button class="btn danger small" type="button" data-del="${a.id}">Remove</button>
+    </div></div>`).join("");
+  document.querySelectorAll("[data-status]").forEach(s=>s.onchange=()=>{const a=APPS.find(x=>x.id===s.dataset.status);a.status=s.value;if(s.value==="Interview"&&!a.interview){openForm(a.id);toast("Add the interview date.")}saveApps();renderTrack()});
+  document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{openForm(b.dataset.edit);$("#trForm").scrollIntoView({behavior:"smooth"})});
+  document.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{
+    if(b.dataset.armed){APPS=APPS.filter(x=>x.id!==b.dataset.del);saveApps();renderTrack();toast("Application removed.")}
+    else{b.dataset.armed="1";b.textContent="Tap again to remove";setTimeout(()=>{if(b.isConnected){delete b.dataset.armed;b.textContent="Remove"}},4000)}});
+}
+
 })();
+
 
 /* Light / dark toggle */
 (function(){
