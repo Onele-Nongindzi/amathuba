@@ -9,6 +9,7 @@
     g: group heading, t: title, d: description, u: official link
     levels: education levels it is meant for (only these levels will see it)
     ages:   age groups allowed
+    prov / notProv: (optional) only show (or hide) for people in that province.
     quals:  (optional) qualification or interest codes. If set, ONLY people with that code see it.
             Leave it out for general opportunities open to everyone at those levels.
 */
@@ -52,7 +53,7 @@ window.AMATHUBA_OPPS = [
  {g:"Register for job matching",t:"Employment Services of South Africa (ESSA)",d:"The Department of Employment and Labour’s free job-seeker database. Government and employers search it for candidates. You need an ID number and email address.",u:"https://essa.labour.gov.za/EssaOnline/WebBeans/",levels:ALL,ages:ADULT},
  {g:"Register for job matching",t:"SA Youth",d:"Free national network for young people looking for work and learning. The mobile site is zero-rated on most networks.",u:"https://sayouth.mobi",levels:[0,1,2,3,4,5],ages:YOUTH},
  {g:"Find work",t:"Government jobs: Public Service Vacancy Circular",d:"Weekly list of government posts. Each post states the exact qualification it needs. Apply with the Z83 form.",u:"https://www.dpsa.gov.za",levels:ALL,ages:ADULT},
- {g:"Find work",t:"Expanded Public Works Programme (EPWP)",d:"Short-term paid work on community projects. Intakes are run through the municipality: ask Ingquza Hill Municipality or your ward councillor.",u:"https://www.publicworks.gov.za",levels:[0,1,2],ages:ADULT},
+ {g:"Find work",t:"Expanded Public Works Programme (EPWP)",d:"Short-term paid work on community projects. Intakes are run through municipalities: ask your local municipality or ward councillor.",u:"https://www.publicworks.gov.za",levels:[0,1,2],ages:ADULT},
  {g:"Find work",t:"Harambee Youth Employment Accelerator",d:"Prepares young people with matric for entry-level jobs and connects them with employers.",u:"https://www.harambee.co.za",levels:[2,3],ages:YOUTH},
  {g:"Find work",t:"YES (Youth Employment Service)",d:"Paid 12-month work experience with companies for young people.",u:"https://www.yes4youth.co.za",levels:[2,3,4],ages:YOUTH},
  {g:"Find work",t:"Government graduate internships",d:"Departments offer 12 to 24-month paid internships for diploma and degree holders, usually up to age 35. Search the circular for “internship” plus your field.",u:"https://www.dpsa.gov.za",levels:[4,5,6],ages:YOUTH},
@@ -85,10 +86,12 @@ window.AMATHUBA_OPPS = [
  {g:"Made for your qualification",t:"CAPACITI",d:"Free digital skills and work-readiness programmes for young people in tech, with job placement support.",u:"https://www.capaciti.org.za",levels:[3,4,5,6],ages:YOUTH,quals:["it"]},
  // Teaching
  {g:"Made for your qualification",t:"SACE registration",d:"You must register with the South African Council for Educators before you can teach.",u:"https://www.sace.org.za",levels:[5,6],ages:ADULT,quals:["teach"]},
- {g:"Made for your qualification",t:"Eastern Cape Department of Education posts",d:"Teaching posts and bulletins for Eastern Cape schools.",u:"https://www.eceducation.gov.za",levels:[5,6],ages:ADULT,quals:["teach"]},
+ {g:"Made for your qualification",t:"Eastern Cape Department of Education posts",d:"Teaching posts and bulletins for Eastern Cape schools.",u:"https://www.eceducation.gov.za",levels:[5,6],ages:ADULT,quals:["teach"],prov:"Eastern Cape"},
+ {g:"Made for your qualification",t:"Provincial teaching posts",d:"Each province’s Department of Education advertises teaching posts in vacancy bulletins. Search the circular and your provincial department’s website.",u:"https://www.dpsa.gov.za",levels:[5,6],ages:ADULT,quals:["teach"],notProv:"Eastern Cape"},
  // Nursing
  {g:"Made for your qualification",t:"SANC registration",d:"Register with the South African Nursing Council before you can practise.",u:"https://www.sanc.co.za",levels:[3,4,5,6],ages:ADULT,quals:["nurse"]},
- {g:"Made for your qualification",t:"Eastern Cape Department of Health vacancies",d:"Nursing and health posts in Eastern Cape hospitals and clinics, including St Elizabeth’s in Lusikisiki.",u:"https://www.echealth.gov.za",levels:[3,4,5,6],ages:ADULT,quals:["nurse"]},
+ {g:"Made for your qualification",t:"Eastern Cape Department of Health vacancies",d:"Nursing and health posts in Eastern Cape hospitals and clinics.",u:"https://www.echealth.gov.za",levels:[3,4,5,6],ages:ADULT,quals:["nurse"],prov:"Eastern Cape"},
+ {g:"Made for your qualification",t:"Provincial health posts",d:"Nursing and health posts are advertised by each province’s Department of Health and in the Public Service Vacancy Circular.",u:"https://www.dpsa.gov.za",levels:[3,4,5,6],ages:ADULT,quals:["nurse"],notProv:"Eastern Cape"},
  // Accounting
  {g:"Made for your qualification",t:"AGSA trainee auditor scheme",d:"The Auditor-General’s training programme towards becoming a chartered accountant.",u:"https://www.agsa.co.za",levels:[5,6],ages:YOUTH,quals:["acc"]},
  {g:"Made for your qualification",t:"SAICA training contracts",d:"Find accredited employers for your CA(SA) training contract.",u:"https://www.saica.org.za",levels:[5,6],ages:ADULT,quals:["acc"]},

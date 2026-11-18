@@ -37,7 +37,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 <body>
 <div class="wrap">
   <h1>Post a local opportunity</h1>
-  <p class="hint">For Onele Foundation volunteers. Fill in the form, copy the updated list, and paste it into GitHub. The opportunity then appears in Amathuba under “Near you in Lusikisiki”.</p>
+  <p class="hint">For Onele Foundation volunteers. Fill in the form, copy the updated list, and paste it into GitHub. The opportunity then appears in Amathuba under “Opportunities posted by Onele Foundation”, and job seekers can filter by province.</p>
   <div class="note"><strong>Only post opportunities you have checked</strong> with the employer, municipality or official notice. Never post anything that asks applicants for money.</div>
 
   <fieldset><legend>The opportunity</legend>
@@ -45,7 +45,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
       <div><label for="title">Title</label><input id="title" placeholder="General Worker (EPWP)"></div>
       <div><label for="org">Organisation</label><input id="org" placeholder="Ingquza Hill Municipality"></div>
       <div><label for="type">Type</label><select id="type"><option>Job</option><option>EPWP</option><option>Learnership</option><option>Internship</option><option>Bursary</option><option>Training</option><option>Volunteer</option></select></div>
-      <div><label for="place">Place</label><input id="place" value="Lusikisiki"></div>
+      <div><label for="place">Town or city</label><input id="place" placeholder="Lusikisiki" list="townList"><datalist id="townList"></datalist></div>
+      <div><label for="province">Province</label><select id="province"><option value="">Choose…</option><option>Eastern Cape</option><option>Free State</option><option>Gauteng</option><option>KwaZulu-Natal</option><option>Limpopo</option><option>Mpumalanga</option><option>Northern Cape</option><option>North West</option><option>Western Cape</option><option>Remote / anywhere</option></select></div>
       <div><label for="closing">Closing date <small>(leave empty if open)</small></label><input id="closing" type="date"></div>
       <div><label for="minLevel">Minimum education</label><select id="minLevel"><option value="">Anyone</option><option value="1">Grade 9 to 11</option><option value="2">Matric</option><option value="3">Certificate / NC(V)</option><option value="4">Diploma</option><option value="5">Degree</option></select></div>
       <div><label for="ref">Reference number <small>(optional)</small></label><input id="ref"></div>
@@ -71,17 +72,21 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   </ol>
   <pre id="out" aria-label="Updated list"></pre>
 </div>
+<script src="js/towns.js"></script>
 <script>
 (function(){
   const $=s=>document.querySelector(s);
   let list=[];
+  const TOWNS=window.AMATHUBA_TOWNS||[];
+  $("#townList").innerHTML=TOWNS.map(t=>`<option value="${t[0]}">`).join("");
+  $("#place").addEventListener("change",()=>{const t=TOWNS.find(x=>x[0].toLowerCase()===$("#place").value.trim().toLowerCase());if(t){$("#place").value=t[0];$("#province").value=t[1]}});
   const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d};
   const expired=o=>o.closing&&new Date(o.closing+"T00:00:00")<today();
   function render(){
     $("#items").innerHTML=list.length?"":'<p class="hint">The list is empty.</p>';
     list.forEach((o,i)=>{
       const d=document.createElement("div");d.className="item"+(expired(o)?" expired":"");
-      const t=document.createElement("span");t.textContent=`${o.title}${o.org?" · "+o.org:""}${o.closing?" · closes "+o.closing:""}${expired(o)?" (closed)":""}`;
+      const t=document.createElement("span");t.textContent=`${o.title}${o.org?" · "+o.org:""}${o.province?" · "+o.province:""}${o.closing?" · closes "+o.closing:""}${expired(o)?" (closed)":""}`;
       const b=document.createElement("button");b.type="button";b.textContent="Remove";b.onclick=()=>{list.splice(i,1);render()};
       d.append(t,b);$("#items").append(d);
     });
@@ -90,12 +95,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   }
   fetch("data/local-opportunities.json",{cache:"no-cache"}).then(r=>r.ok?r.json():[]).then(j=>{list=Array.isArray(j)?j:[];$("#status").textContent=`${list.length} opportunit${list.length===1?"y":"ies"} on the live site.`;render()})
     .catch(()=>{$("#status").textContent="Couldn’t load the current list. Open this page from the live site, not from a file on your computer.";render()});
-  ["title","org"].forEach(id=>$("#"+id).addEventListener("input",()=>$("#err").textContent=""));
+  ["title","org","province"].forEach(id=>$("#"+id).addEventListener("input",()=>$("#err").textContent=""));
   $("#add").onclick=()=>{
     const v=id=>$("#"+id).value.trim();
-    if(!v("title")||!v("org")){$("#err").textContent="Enter the title and the organisation first.";return}
+    if(!v("title")||!v("org")||!v("province")){$("#err").textContent="Enter the title, organisation and province first.";return}
     if(v("link")&&!/^https?:\/\//.test(v("link"))){$("#err").textContent="The link must start with https://";return}
-    const o={title:v("title"),org:v("org"),type:v("type"),place:v("place"),posted:new Date().toISOString().slice(0,10)};
+    const o={title:v("title"),org:v("org"),type:v("type"),place:v("place"),province:v("province"),posted:new Date().toISOString().slice(0,10)};
     ["closing","ref","link","requirements","howToApply"].forEach(k=>{if(v(k))o[k]=v(k)});
     if(v("minLevel"))o.minLevel=+v("minLevel");
     list.push(o);render();

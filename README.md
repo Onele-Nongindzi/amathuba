@@ -38,9 +38,9 @@ Check every link at least once a quarter; programmes and websites change often.
 
 Copyright (c) 2026 Onele Nongindzi. All rights reserved. See COPYRIGHT.txt.
 
-## Posting local opportunities (Near you in Lusikisiki)
+## Posting opportunities (Lusikisiki and across South Africa)
 
-Local opportunities live in `data/local-opportunities.json` and show at the top of the "Where to apply" tab. Closed ones hide automatically.
+Opportunities posted by Onele Foundation live in `data/local-opportunities.json` and show at the top of the "Where to apply" tab, where job seekers can filter by province. Closed ones hide automatically.
 
 1. Open `admin.html` on the live site (for example `https://<your-site>/admin.html`).
 2. Fill in the form, click **Add to the list**, then **Copy the updated list**.
