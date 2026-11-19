@@ -424,39 +424,53 @@ input.flagged,textarea.flagged{border-color:var(--bad);box-shadow:0 0 0 2px rgba
     </div>
   </fieldset>
 
-  <fieldset><legend>Part B: Personal details</legend>
+  <fieldset><legend>Part B: Personal information</legend>
+    <p class="hint">Your details must match your ID or passport exactly.</p>
     <div class="grid">
       <div><label for="z_surname">Surname</label><input id="z_surname" data-z="surname"></div>
       <div><label for="z_names">Full names</label><input id="z_names" data-z="names"></div>
       <div><label for="z_dob">Date of birth</label><input id="z_dob" data-z="dob" type="date"></div>
-      <div><label for="z_id">ID number <small>(or passport number)</small></label><input id="z_id" data-z="idno" inputmode="numeric" autocomplete="off"></div>
-      <div><label for="z_citizen">South African citizen?</label><select id="z_citizen" data-z="citizen"><option value="">Choose…</option><option>Yes</option><option>No</option></select></div>
-      <div><label for="z_permit">If not, nationality and work permit number</label><input id="z_permit" data-z="permit" placeholder="Write N/A if you are a citizen"></div>
+      <div><label for="z_id">Identity number</label><input id="z_id" data-z="idno" inputmode="numeric" autocomplete="off"></div>
+      <div><label for="z_pass">Passport number <small>(non-South Africans only)</small></label><input id="z_pass" data-z="passport" placeholder="N/A"></div>
+      <div><label for="z_race">Race <small>(for employment equity)</small></label><select id="z_race" data-z="race"><option value="">Choose…</option><option>African</option><option>White</option><option>Coloured</option><option>Indian</option><option>Other</option></select></div>
+      <div><label for="z_gender">Gender</label><select id="z_gender" data-z="gender"><option value="">Choose…</option><option>Female</option><option>Male</option></select></div>
+      <div><label for="z_dis">Do you have a disability?</label><select id="z_dis" data-z="disability"><option value="">Choose…</option><option>No</option><option>Yes</option></select></div>
+      <div><label for="z_citizen">Are you a South African citizen?</label><select id="z_citizen" data-z="citizen"><option value="">Choose…</option><option>Yes</option><option>No</option></select></div>
+      <div><label for="z_nat">If no, your nationality</label><input id="z_nat" data-z="nationality" placeholder="N/A"></div>
+      <div><label for="z_permit">Valid work permit? <small>(non-South Africans only)</small></label><select id="z_permit" data-z="permit"><option value="">Choose…</option><option>N/A</option><option>Yes</option><option>No</option></select></div>
     </div>
-    <p class="hint" style="margin:14px 0 8px">Answer every yes/no question honestly. A false answer can lead to dismissal later. Never leave one blank.</p>
+    <p class="hint" style="margin:14px 0 8px">Answer every yes/no question honestly. A false answer can lead to disqualification or dismissal later. If you answer yes, the form asks for details: give them on the form.</p>
     <div id="zQs"></div>
     <div class="grid" style="margin-top:10px">
       <div><label for="z_yrsPriv">Years of experience: private sector</label><input id="z_yrsPriv" data-z="yrsPriv" inputmode="numeric" placeholder="0"></div>
       <div><label for="z_yrsPub">Years of experience: public sector</label><input id="z_yrsPub" data-z="yrsPub" inputmode="numeric" placeholder="0"></div>
+      <div><label for="z_regDate">Professional registration date <small>(if your job needs it)</small></label><input id="z_regDate" data-z="regDate" placeholder="N/A"></div>
+      <div><label for="z_regNo">Registration number</label><input id="z_regNo" data-z="regNo" placeholder="N/A"></div>
     </div>
   </fieldset>
 
   <fieldset><legend>Part C: Contact details</legend>
     <div class="grid">
-      <div><label for="z_lang">Preferred language for letters</label><input id="z_lang" data-z="lang" placeholder="English"></div>
-      <div><label for="z_phone">Contact number</label><input id="z_phone" data-z="phone" inputmode="tel"></div>
+      <div><label for="z_lang">Preferred language for correspondence</label><input id="z_lang" data-z="lang" placeholder="English"></div>
+      <div><label for="z_method">How should they contact you?</label><select id="z_method" data-z="method"><option value="">Choose…</option><option>E-mail</option><option>Telephone</option><option>Post</option><option>Fax</option></select></div>
+      <div><label for="z_phone">Phone number</label><input id="z_phone" data-z="phone" inputmode="tel"></div>
       <div><label for="z_email">Email address</label><input id="z_email" data-z="email" type="email"></div>
     </div>
   </fieldset>
 
-  <fieldset><legend>Part D: Qualifications</legend>
-    <p class="hint">List your highest school qualification and any tertiary qualifications.</p>
-    <textarea id="z_quals" data-z="quals" placeholder="National Senior Certificate, Lusikisiki Village School, 2018&#10;Diploma in Information Technology, Walter Sisulu University, 2022"></textarea>
+  <fieldset><legend>Part D: Official language proficiency</legend>
+    <p class="hint">For each South African language you know, say whether you speak it and read or write it “good”, “fair” or “poor”.</p>
+    <textarea id="z_langs" data-z="langs" placeholder="isiXhosa: speak good, read/write good&#10;English: speak good, read/write good"></textarea>
   </fieldset>
 
-  <fieldset><legend>Parts E to G: Registration, experience and references</legend>
-    <p class="hint">Departments usually accept “Refer to attached CV” here. One question in this part must still be answered:</p>
-    <label for="z_reapp">Is there any condition that prevents your re-appointment in the public service?</label>
+  <fieldset><legend>Part E: Formal qualifications</legend>
+    <p class="hint">From highest to lowest: school or institution, qualification and year obtained. Add any current studies too.</p>
+    <textarea id="z_quals" data-z="quals" placeholder="Walter Sisulu University, Diploma in Information Technology, 2022&#10;Lusikisiki High School, National Senior Certificate, 2018"></textarea>
+  </fieldset>
+
+  <fieldset><legend>Parts F and G: Work experience and references</legend>
+    <p class="hint">Many departments accept “Refer to attached CV” for work experience and references, because your CV has the details. Check the advert. One question in Part F must always be answered:</p>
+    <label for="z_reapp">If you worked in the public service before, is there any condition that prevents your re-appointment?</label>
     <select id="z_reapp" data-z="reapp"><option value="">Choose…</option><option>No</option><option>Yes</option><option>N/A: never worked in the public service</option></select>
   </fieldset>
 
@@ -849,14 +863,15 @@ const ZKEY="amathuba-z83-v1";
 let Z={};try{Z=JSON.parse(localStorage.getItem(ZKEY)||"{}")}catch(e){Z={}}
 const saveZ=()=>{try{localStorage.setItem(ZKEY,JSON.stringify(Z))}catch(e){}};
 const ZQ=[
- ["q1","Have you been convicted or found guilty of a criminal offence?"],
+ ["q1","Have you been convicted or found guilty of a criminal offence (including an admission of guilt)?"],
  ["q2","Do you have any pending criminal case against you?"],
- ["q3","Have you ever been dismissed for misconduct from the public service?"],
+ ["q3","Have you ever been dismissed for misconduct from the Public Service?"],
  ["q4","Do you have any pending disciplinary case against you?"],
- ["q5","Have you resigned from a post while disciplinary proceedings were pending against you?"],
+ ["q5","Have you resigned from a recent job pending any disciplinary proceeding against you?"],
+ ["q8","Have you been discharged or retired from the Public Service on grounds of ill-health, or on condition that you cannot be re-employed?"],
  ["q6","Are you conducting business with the State, or are you a director of a company that does?"],
- ["q7","If you are employed in the public service, will you give up any business interests with the State if appointed?"]];
-const ZTICK=[["t1","Every field in Parts A, B, C and D is filled in (write N/A, never leave blanks)"],["t2","Every page is initialled and the form is signed and dated"],["t3","The reference number matches the advert exactly"],["t4","One separate Z83 for each post you apply for"],["t5","Z83 and CV saved together as ONE PDF if emailing (no photos)"],["t6","Sent before the closing date and time"]];
+ ["q7","If you are employed in the Public Service, will you immediately give up such business interests?"]];
+const ZTICK=[["t1","Every field on the form is filled in (write N/A where it doesn’t apply, never leave blanks)"],["t2","Every page is initialled and the form is signed and dated"],["t3","The reference number matches the advert exactly"],["t4","One separate Z83 for each post you apply for"],["t5","Z83 and CV saved together as ONE PDF if emailing (no photos)"],["t6","Sent before the closing date and time"]];
 function zQs(){
   $("#zQs").innerHTML=ZQ.map(([k,q])=>`<div class="yn${Z[k]?"":" unanswered"}"><span>${esc(q)}</span><select data-zq="${k}" aria-label="${esc(q)}"><option value="">Choose…</option>${(k==="q7"?["Yes","No","N/A"]:["No","Yes"]).map(o=>`<option${Z[k]===o?" selected":""}>${o}</option>`).join("")}</select></div>`).join("");
   document.querySelectorAll("[data-zq]").forEach(s=>s.onchange=()=>{Z[s.dataset.zq]=s.value;saveZ();renderZ83()});
@@ -866,7 +881,9 @@ $("#zFill").onclick=()=>{
   const parts=S.name.trim().split(/\s+/);
   if(parts.length>1&&!Z.surname){Z.surname=parts[parts.length-1];Z.names=parts.slice(0,-1).join(" ")}
   if(!Z.phone)Z.phone=S.phone; if(!Z.email)Z.email=S.email;
-  if(!Z.quals)Z.quals=S.edu.filter(e=>e.qual).map(e=>[e.qual,e.inst,e.year].filter(Boolean).join(", ")).join("\n");
+  if(!Z.quals)Z.quals=S.edu.filter(e=>e.qual).map(e=>[e.inst,e.qual,e.year].filter(Boolean).join(", ")).join("\n");
+  if(!Z.method&&S.email)Z.method="E-mail";
+  if(!Z.langs&&S.languages)Z.langs=S.languages.split(/,\s*|\s+and\s+/).filter(Boolean).map(l=>`${l.trim()}: speak good, read/write good`).join("\n");
   if(!Z.post&&S.target)Z.post=S.target;
   saveZ();document.querySelectorAll("[data-z]").forEach(el=>el.value=Z[el.dataset.z]||"");renderZ83();toast("Copied what we could from your CV details.");
 };
@@ -875,7 +892,7 @@ $("#zClear").onclick=function(){
   Z={};saveZ();document.querySelectorAll("[data-z]").forEach(el=>el.value="");delete this.dataset.armed;this.textContent="Clear Z83 answers";renderZ83();toast("Z83 answers cleared.");
 };
 function zMissing(){
-  const need=[["post","Position"],["ref","Reference number"],["dept","Department"],["surname","Surname"],["names","Full names"],["dob","Date of birth"],["idno","ID number"],["citizen","Citizenship"],["phone","Contact number"],["email","Email"],["quals","Qualifications"],["reapp","Re-appointment question"]];
+  const need=[["post","Position"],["ref","Reference number"],["dept","Department"],["start","When you can start"],["surname","Surname"],["names","Full names"],["dob","Date of birth"],["idno","Identity number"],["race","Race"],["gender","Gender"],["disability","Disability"],["citizen","Citizenship"],["lang","Preferred language"],["method","Contact method"],["phone","Phone number"],["langs","Language proficiency"],["quals","Qualifications"],["reapp","Re-appointment question"]];
   return need.filter(([k])=>!String(Z[k]||"").trim()).map(x=>x[1]).concat(ZQ.filter(([k])=>!Z[k]).length?["Yes/no questions in Part B"]:[]);
 }
 function zStatus(){
@@ -898,11 +915,15 @@ $("#zPdf").onclick=async()=>{
   line("Z83 answer sheet (copy onto the official form)",true,15);
   line("Not the official form. Use the new Z83 (effective 01 January 2021) from dpsa.gov.za.",false,9.5);
   head("Part A: The post");row("Position",Z.post);row("Reference number",Z.ref);row("Department",Z.dept);row("Available to start",Z.start);
-  head("Part B: Personal details");row("Surname",Z.surname);row("Full names",Z.names);row("Date of birth",Z.dob);row("ID / passport number",Z.idno);row("South African citizen",Z.citizen);row("Nationality and work permit",Z.permit||"N/A");
-  ZQ.forEach(([k,q])=>row(q,Z[k]));row("Years experience, private sector",Z.yrsPriv||"0");row("Years experience, public sector",Z.yrsPub||"0");
-  head("Part C: Contact details");row("Preferred language",Z.lang);row("Contact number",Z.phone);row("Email",Z.email);
-  head("Part D: Qualifications");String(Z.quals||"________________").split("\n").forEach(q=>line("- "+q));
-  head("Parts E to G");line("Write: Refer to attached CV");row("Condition preventing re-appointment",Z.reapp);
+  head("Part B: Personal information");row("Surname",Z.surname);row("Full names",Z.names);row("Date of birth (DD/MM/YY)",Z.dob?Z.dob.split("-").reverse().map((x,i)=>i===2?x.slice(2):x).join("/"):"");row("Identity number",Z.idno);row("Passport number",Z.passport||"N/A");
+  row("Race",Z.race);row("Gender",Z.gender);row("Disability",Z.disability);row("South African citizen",Z.citizen);row("Nationality (if not South African)",Z.nationality||"N/A");row("Valid work permit",Z.permit||"N/A");
+  ZQ.forEach(([k,q])=>row(q,Z[k]));row("Years of experience, private sector",Z.yrsPriv||"0");row("Years of experience, public sector",Z.yrsPub||"0");row("Professional registration date and number",[Z.regDate,Z.regNo].filter(Boolean).join(", ")||"N/A");
+  head("Part C: Contact details");row("Preferred language for correspondence",Z.lang);row("Method for correspondence",Z.method);row("Contact details",[Z.phone,Z.email].filter(Boolean).join(" | "));
+  head("Part D: Official language proficiency (good / fair / poor)");String(Z.langs||"________________").split("\n").forEach(q=>line("- "+q));
+  head("Part E: Formal qualifications (highest to lowest)");String(Z.quals||"________________").split("\n").forEach(q=>line("- "+q));
+  head("Part F: Work experience");line("Refer to attached CV (if the advert allows)");row("Condition preventing re-appointment in the Public Service",Z.reapp);
+  head("Part G: References");line("Refer to attached CV (if the advert allows)");
+  head("Declaration");line("Sign and date the declaration, and initial every page.");
   head("Before you send it");ZTICK.forEach(([k,t])=>line(`[${Z[k]?"x":" "}] ${t}`));
   saveFile(`Z83_answers_${(Z.ref||"post").replace(/[^\w-]+/g,"_")}.pdf`,doc.output("arraybuffer"));
 };
@@ -1466,10 +1487,10 @@ function renderDocs(){
   const L=docItems();
   $("#docList").innerHTML=L.map(([k,t,sub,cert])=>{const d=DOCS[k]||{};const age=d.cert?-days(d.cert):null;
     return `<div class="doc"><label><input type="checkbox" data-doc="${k}"${d.have?" checked":""}><span>${esc(t)}${sub?`<small>${esc(sub)}</small>`:""}</span></label>
-    ${cert?`<span class="cert"><label for="c-${k}" style="font-weight:400;flex:none;cursor:default">Copies certified on</label><input type="date" id="c-${k}" data-cert="${k}" value="${d.cert||""}">${age!==null&&age>90?`<span style="color:var(--bad)">${age} days ago</span>`:age!==null?`<span>${age} day${age===1?"":"s"} ago</span>`:""}</span>`:""}</div>`}).join("");
+    ${cert?`<span class="cert"><label for="c-${k}" style="font-weight:400;flex:none;cursor:default">Copies certified on</label><input type="date" id="c-${k}" data-cert="${k}" value="${d.cert||""}">${age!==null&&age>182?`<span style="color:var(--bad)">${age} days ago</span>`:age!==null?`<span>${age} day${age===1?"":"s"} ago</span>`:""}</span>`:""}</div>`}).join("");
   const have=L.filter(([k])=>(DOCS[k]||{}).have).length;
-  const old=L.filter(([k,,,c])=>c&&(DOCS[k]||{}).cert&&-days(DOCS[k].cert)>90).length;
-  $("#docTip").innerHTML=`You have ${have} of ${L.length} ready.${old?` <span style="color:var(--bad)">${old} certified cop${old===1?"y is":"ies are"} over 3 months old.</span>`:""} Only certify copies when you’re shortlisted or the advert asks for them. Many employers want copies certified in the last 3 to 6 months, and police stations certify copies for free.`;
+  const old=L.filter(([k,,,c])=>c&&(DOCS[k]||{}).cert&&-days(DOCS[k].cert)>182).length;
+  $("#docTip").innerHTML=`You have ${have} of ${L.length} ready.${old?` <span style="color:var(--bad)">${old} certified cop${old===1?"y is":"ies are"} over 6 months old.</span>`:""} Only certify copies when you’re shortlisted or the advert asks for them. Government departments must accept copies certified in the last 6 months unless the advert says otherwise, and police stations certify copies for free.`;
   document.querySelectorAll("[data-doc]").forEach(c=>c.onchange=()=>{DOCS[c.dataset.doc]=Object.assign(DOCS[c.dataset.doc]||{},{have:c.checked});saveDocs();renderDocs()});
   document.querySelectorAll("[data-cert]").forEach(c=>c.onchange=()=>{DOCS[c.dataset.cert]=Object.assign(DOCS[c.dataset.cert]||{},{cert:c.value,have:true});saveDocs();renderDocs()});
 }
