@@ -490,10 +490,11 @@ input.flagged,textarea.flagged{border-color:var(--bad);box-shadow:0 0 0 2px rgba
     <h3 style="margin-top:16px">Part G: references</h3>
     <div id="zRefs"></div>
     <h3 style="margin-top:16px">Signature and initials <small style="font-weight:400;color:var(--soft)">(optional)</small></h3>
-    <p class="hint">Draw with your finger. Some departments accept a signature drawn on a phone; others want a handwritten signature on a printed copy, so check the advert. If you skip this, print the filled form and sign and initial it by hand.</p>
+    <p class="hint">Draw with your finger, or type your initials. Drawn initials are used if you draw them. Some departments accept a signature drawn on a phone; others want a handwritten signature on a printed copy, so check the advert. If you skip this, print the filled form and sign and initial it by hand.</p>
     <div class="pads">
       <div><label>Signature</label><canvas class="pad" id="sigPad" width="600" height="180" aria-label="Draw your signature"></canvas><button class="btn ghost small" type="button" data-padclear="sigPad">Clear</button></div>
-      <div><label>Initials</label><canvas class="pad" id="iniPad" width="300" height="180" aria-label="Draw your initials"></canvas><button class="btn ghost small" type="button" data-padclear="iniPad">Clear</button></div>
+      <div><label>Initials</label><canvas class="pad" id="iniPad" width="300" height="180" aria-label="Draw your initials"></canvas><button class="btn ghost small" type="button" data-padclear="iniPad">Clear</button>
+        <label for="z_initials" style="margin-top:8px">Or type your initials</label><input id="z_initials" data-z="initials" placeholder="e.g. O.N." style="max-width:140px"></div>
     </div>
   </fieldset>
 
@@ -921,6 +922,7 @@ $("#zFill").onclick=()=>{
   if(!Z.phone)Z.phone=S.phone; if(!Z.email)Z.email=S.email;
   if(!Z.quals)Z.quals=S.edu.filter(e=>e.qual).map(e=>[e.inst,e.qual,e.year].filter(Boolean).join(", ")).join("\n");
   if(!Z.method&&S.email)Z.method="E-mail";
+  if(!Z.initials&&(Z.names||Z.surname))Z.initials=((Z.names||"").split(/\s+/).concat([Z.surname||""])).filter(Boolean).map(w=>w[0].toUpperCase()+".").join("");
   if(!Z.langs&&S.languages)Z.langs=S.languages.split(/,\s*|\s+and\s+/).filter(Boolean).map(l=>`${l.trim()}: speak good, read/write good`).join("\n");
   if(!Z.post&&S.target)Z.post=S.target;
   saveZ();document.querySelectorAll("[data-z]").forEach(el=>el.value=Z[el.dataset.z]||"");renderZ83();toast("Copied what we could from your CV details.");
@@ -1584,7 +1586,7 @@ function zRenderExtra(){
 }
 function setupPad(id,key){
   const c=document.getElementById(id),x=c.getContext("2d");let drawing=false,last=null;
-  x.lineWidth=5;x.lineCap="round";x.lineJoin="round";x.strokeStyle="#0a1a5c";
+  x.lineWidth=5;x.lineCap="round";x.lineJoin="round";x.strokeStyle="#000000";
   if(Z[key]){const img=new Image();img.onload=()=>x.drawImage(img,0,0);img.src=Z[key]}
   const pos=e=>{const r=c.getBoundingClientRect();return [(e.clientX-r.left)*c.width/r.width,(e.clientY-r.top)*c.height/r.height]};
   c.addEventListener("pointerdown",e=>{drawing=true;last=pos(e);c.setPointerCapture(e.pointerId)});
@@ -1617,7 +1619,7 @@ async function fillOfficialZ83(withCv){
     await loadScript("vendor/pdf-lib.min.js");const {PDFDocument,StandardFonts,rgb}=window.PDFLib;
     const blank=await (await fetch("forms/z83-blank.pdf")).arrayBuffer();
     const pdf=await PDFDocument.load(blank);const font=await pdf.embedFont(StandardFonts.Helvetica);
-    const [p1,p2]=pdf.getPages();const INK=rgb(0.04,0.1,0.36);const H=792;
+    const [p1,p2]=pdf.getPages();const INK=rgb(0,0,0);const H=792;
     const fit=(t,w,size)=>{t=winAnsi(t);while(size>5&&font.widthOfTextAtSize(t,size)>w)size-=0.25;return size};
     const T=(pg,t,x,top,w,size=9)=>{t=winAnsi(t);if(!t.trim())return;let s=fit(t,w,size);
       if(font.widthOfTextAtSize(t,s)>w){while(t.length&&font.widthOfTextAtSize(t+"…",s)>w)t=t.slice(0,-1);t+="..."}
@@ -1667,13 +1669,14 @@ async function fillOfficialZ83(withCv){
     const today=new Date();T(p2,`${String(today.getDate()).padStart(2,"0")}/${String(today.getMonth()+1).padStart(2,"0")}/${today.getFullYear()}`,336,705,120,9.5);
     if(Z.sig){const img=await pdf.embedPng(Z.sig);const w=150,h=w*img.height/img.width;p2.drawImage(img,{x:128,y:H-720,width:w,height:Math.min(h,32)})}
     if(Z.ini){const img=await pdf.embedPng(Z.ini);[p1,p2].forEach(pg=>pg.drawImage(img,{x:542,y:H-776,width:32,height:Math.min(19,32*img.height/img.width)}))}
+    else if((Z.initials||"").trim()){[p1,p2].forEach(pg=>{const t=winAnsi(Z.initials.trim()).slice(0,8);const s=fit(t,34,10);pg.drawRectangle({x:540,y:H-773,width:37,height:12,color:rgb(1,1,1)});pg.drawText(t,{x:542,y:H-770,size:s,font,color:INK})})}
     // Join the CV after the form, if asked
     if(withCv){const cvBytes=await buildCvPdf();if(cvBytes){const cv=await PDFDocument.load(cvBytes);(await pdf.copyPages(cv,cv.getPageIndices())).forEach(pg=>pdf.addPage(pg))}}
     const bytes=await pdf.save();
     const who=((Z.surname||S.name||"My").trim()).replace(/[^\w\- ]+/g,"").replace(/\s+/g,"_");
     saveFile(`${withCv?"Z83_and_CV":"Z83"}_${who}${Z.ref?"_"+Z.ref.replace(/[^\w-]+/g,"_"):""}.pdf`,bytes);
     const miss=zMissing();
-    note.innerHTML=miss.length?`<span style="color:var(--bad)">Saved, but some answers are still empty: ${esc(miss.join(", "))}. Fill them in and download again.</span>`:`Saved. ${Z.sig&&Z.ini?"Check every page before sending.":"Print it, then sign it and initial both pages by hand, or add your signature above."}${["q1","q2","q3","q4","q6"].some(k=>Z[k]==="Yes")?" You answered “Yes” to a question that asks for details: write them on the form or attach them.":""}`;
+    note.innerHTML=miss.length?`<span style="color:var(--bad)">Saved, but some answers are still empty: ${esc(miss.join(", "))}. Fill them in and download again.</span>`:`Saved. ${Z.sig&&(Z.ini||(Z.initials||"").trim())?"Check every page before sending.":!Z.sig&&(Z.ini||(Z.initials||"").trim())?"Your initials are on both pages. Print it and sign it by hand, or draw your signature above.":Z.sig?"Initial both pages by hand, or add your initials above.":"Print it, then sign it and initial both pages by hand, or add your signature and initials above."}${["q1","q2","q3","q4","q6"].some(k=>Z[k]==="Yes")?" You answered “Yes” to a question that asks for details: write them on the form or attach them.":""}`;
     if(!miss.length)note.style.color="var(--good)";
   }catch(e){note.innerHTML=`<span style="color:var(--bad)">Couldn’t fill the form. Check your connection and refresh, then try again.</span><br><small>Technical detail: ${esc(String(e&&e.message||e).slice(0,160))}</small>`}
 }
