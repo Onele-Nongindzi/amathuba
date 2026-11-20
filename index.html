@@ -216,7 +216,7 @@ input.flagged,textarea.flagged{border-color:var(--bad);box-shadow:0 0 0 2px rgba
     <p>Upload it and Amathuba will read it, fix common spelling mistakes, sort it into ATS-friendly headings and fill in this form for you to check.</p>
     <div class="app-actions">
       <button class="btn small" type="button" id="cvPick">Upload my CV</button>
-      <input type="file" id="cvFile" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" hidden>
+      <input type="file" id="cvFile" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,application/octet-stream" hidden>
       <button class="btn ghost small" type="button" id="pasteBtn">Paste the text instead</button>
     </div>
     <div id="pasteWrap" hidden style="margin-top:10px">
@@ -1140,11 +1140,18 @@ loadLocal();
 function loadScript(src){return new Promise((res,rej)=>{if(document.querySelector(`script[src="${src}"]`))return res();const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
 async function readCvFile(file){
   const name=(file.name||"").toLowerCase();
-  if(name.endsWith(".txt")||file.type==="text/plain")return await file.text();
-  if(name.endsWith(".docx")){await loadScript("vendor/mammoth.browser.min.js");const r=await window.mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()});return r.value}
-  if(name.endsWith(".pdf")||file.type==="application/pdf"){
+  // Look at the file's first bytes, because phones don't always keep the file name or type
+  const buf=await file.arrayBuffer();const head=new Uint8Array(buf.slice(0,8));
+  const isPdf=head[0]===0x25&&head[1]===0x50&&head[2]===0x44&&head[3]===0x46;
+  const isZip=head[0]===0x50&&head[1]===0x4b&&head[2]===0x03&&head[3]===0x04;
+  const isOldDoc=head[0]===0xd0&&head[1]===0xcf&&head[2]===0x11&&head[3]===0xe0;
+  const isImage=(head[0]===0xff&&head[1]===0xd8)||(head[0]===0x89&&head[1]===0x50)||/^image\//.test(file.type||"");
+  if(isOldDoc)throw new Error("doc");
+  if(isImage)throw new Error("image");
+  if(isZip){await loadScript("vendor/mammoth.browser.min.js");const r=await window.mammoth.extractRawText({arrayBuffer:buf});return r.value}
+  if(isPdf){
     await loadScript("vendor/pdf.min.js");const lib=window.pdfjsLib;lib.GlobalWorkerOptions.workerSrc="vendor/pdf.worker.min.js";
-    const pdf=await lib.getDocument({data:await file.arrayBuffer()}).promise;let out=[];
+    const pdf=await lib.getDocument({data:new Uint8Array(buf),isEvalSupported:false}).promise;let out=[];
     for(let p=1;p<=pdf.numPages;p++){
       const tc=await (await pdf.getPage(p)).getTextContent();
       let line="",ly=null,lx=null;
@@ -1160,6 +1167,9 @@ async function readCvFile(file){
     return out.join("\n");
   }
   if(name.endsWith(".doc"))throw new Error("doc");
+  // plain text (or a file with no extension that is really text)
+  const txt=new TextDecoder("utf-8").decode(buf);const printable=(txt.match(/[\x20-\x7E\n\r\t\u00A0-\u024F’“”–—•]/g)||[]).length;
+  if(txt.length&&printable/txt.length>0.9)return txt;
   throw new Error("type");
 }
 const SPELL={recieve:"receive",recieved:"received",acheive:"achieve",acheived:"achieved",acheivement:"achievement",responsibilty:"responsibility",responsibilites:"responsibilities",responsibilties:"responsibilities",resposible:"responsible",responsable:"responsible",managment:"management",manegement:"management",maintainance:"maintenance",maintenence:"maintenance",excellant:"excellent",comunication:"communication",communcation:"communication",experiance:"experience",expirience:"experience",experince:"experience",knowlege:"knowledge",proffesional:"professional",profesional:"professional",succesful:"successful",successfull:"successful",sucessful:"successful",sucess:"success",adress:"address",enviroment:"environment",goverment:"government",occured:"occurred",seperate:"separate",definately:"definitely",untill:"until",begining:"beginning",beleive:"believe",calender:"calendar",collegue:"colleague",colleage:"colleague",commited:"committed",comittee:"committee",efficent:"efficient",independant:"independent",neccessary:"necessary",necesary:"necessary",oppurtunity:"opportunity",oppertunity:"opportunity",organsation:"organisation",organisaton:"organisation",persue:"pursue",prefered:"preferred",priviledge:"privilege",recomend:"recommend",refered:"referred",relevent:"relevant",sincerly:"sincerely",skils:"skills",teh:"the",wich:"which",writting:"writing",writen:"written",adminstration:"administration",administator:"administrator",accomodate:"accommodate",accross:"across",assisstant:"assistant",assistent:"assistant",attendence:"attendance",buisness:"business",bussiness:"business",certicate:"certificate",certifcate:"certificate",costumer:"customer",costumers:"customers",customar:"customer",dilligent:"diligent",eductaion:"education",educaton:"education",grammer:"grammar",initative:"initiative",inteligent:"intelligent",intrested:"interested",languge:"language",punctural:"punctual",qualifacation:"qualification",qualificaton:"qualification",refrences:"references",referances:"references",schedual:"schedule",secratary:"secretary",suppervisor:"supervisor",superviser:"supervisor",technicion:"technician",tecnical:"technical",truely:"truly",volunter:"volunteer",volenteer:"volunteer",wokring:"working",perfomance:"performance",preformance:"performance",strenght:"strength",strenghts:"strengths",abilty:"ability",accuratly:"accurately",basicly:"basically",carefull:"careful",competant:"competent",conscientous:"conscientious",dissapointed:"disappointed",embarass:"embarrass",familar:"familiar",finaly:"finally",freind:"friend",goverments:"governments",hieght:"height",immediatly:"immediately",leadeship:"leadership",liason:"liaison",occassion:"occasion",posession:"possession",reciept:"receipt",tommorow:"tomorrow",wierd:"weird"};
@@ -1387,7 +1397,7 @@ $("#cvFile").onchange=async e=>{
   const f=e.target.files[0];e.target.value="";if(!f)return;
   $("#importReport").innerHTML=`<div class="report">Reading ${esc(f.name)}…</div>`;
   try{handleText(await readCvFile(f))}
-  catch(err){$("#importReport").innerHTML=`<div class="report warn">${err&&err.message==="doc"?"Old Word files (.doc) can’t be read. Save it as .docx or PDF in Word, or paste the text instead.":err&&err.message==="type"?"That file type can’t be read. Use a PDF, a Word .docx file or a .txt file.":"We couldn’t read that file. Try saving it as PDF, or paste the text instead."}</div>`}
+  catch(err){const m=err&&err.message;$("#importReport").innerHTML=`<div class="report warn">${m==="doc"?"Old Word files (.doc) can’t be read. Save it as .docx or PDF in Word, or paste the text instead.":m==="image"?"That’s a photo, and photos of CVs can’t be read. Upload the PDF or Word file instead, or paste the text.":m==="type"?"That file type can’t be read. Use a PDF, a Word .docx file or a .txt file.":"We couldn’t read that file. Try saving it as PDF, or paste the text instead."}${m&&!["doc","image","type"].includes(m)?`<br><small style="color:var(--soft)">Technical detail (for support): ${esc(String(m).slice(0,160))}</small>`:""}</div>`}
 };
 $("#pasteBtn").onclick=()=>{$("#pasteWrap").hidden=!$("#pasteWrap").hidden;if(!$("#pasteWrap").hidden)$("#pasteText").focus()};
 $("#pasteGo").onclick=()=>handleText($("#pasteText").value);
