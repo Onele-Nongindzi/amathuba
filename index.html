@@ -268,8 +268,8 @@ input.flagged,textarea.flagged{border-color:var(--bad);box-shadow:0 0 0 2px rgba
       <textarea id="summary" data-k="summary" placeholder="Who you are, what you’re good at, and the job you want."></textarea>
       <div class="row-actions"><button class="btn ghost small" type="button" id="suggest">Write one for me</button></div>
     </div>
-    <div><label for="skills">Skills <small>(separate with commas)</small></label>
-      <textarea id="skills" data-k="skills" placeholder="Customer service, Microsoft Word, Cash handling, Teamwork"></textarea></div>
+    <div><label for="skills">Skills <small>(separate with commas; optional groups on new lines)</small></label>
+      <textarea id="skills" data-k="skills" placeholder="Customer service, Microsoft Word, Cash handling, Teamwork&#10;or in groups:&#10;Front-End: React.js, Tailwind CSS&#10;Back-End: Node.js, SQL"></textarea></div>
   </fieldset>
 
   <fieldset><legend>Work and volunteer experience</legend>
@@ -430,7 +430,7 @@ input.flagged,textarea.flagged{border-color:var(--bad);box-shadow:0 0 0 2px rgba
       <div><label for="z_surname">Surname</label><input id="z_surname" data-z="surname"></div>
       <div><label for="z_names">Full names</label><input id="z_names" data-z="names"></div>
       <div><label for="z_dob">Date of birth</label><input id="z_dob" data-z="dob" type="date"></div>
-      <div><label for="z_id">Identity number</label><input id="z_id" data-z="idno" inputmode="numeric" autocomplete="off"></div>
+      <div><label for="z_id">Identity number</label><input id="z_id" data-z="idno" inputmode="numeric" autocomplete="off"><small id="zIdNote" style="display:block;margin-top:4px;font-size:.82rem"></small></div>
       <div><label for="z_pass">Passport number <small>(non-South Africans only)</small></label><input id="z_pass" data-z="passport" placeholder="N/A"></div>
       <div><label for="z_race">Race <small>(for employment equity)</small></label><select id="z_race" data-z="race"><option value="">Choose…</option><option>African</option><option>White</option><option>Coloured</option><option>Indian</option><option>Other</option></select></div>
       <div><label for="z_gender">Gender</label><select id="z_gender" data-z="gender"><option value="">Choose…</option><option>Female</option><option>Male</option></select></div>
@@ -616,13 +616,14 @@ $("#suggest").onclick=()=>{
 };
 
 /* CV text model */
-function skillsArr(){return S.skills.split(/[,\n]/).map(s=>s.trim()).filter(Boolean)}
+function skillsArr(){return S.skills.split("\n").flatMap(l=>l.replace(/^([A-Za-z][A-Za-z &\/\-]{1,28}):\s*/,"").split(",")).map(s=>s.trim()).filter(Boolean)}
+function skillGroups(){return S.skills.split("\n").map(l=>l.trim()).filter(Boolean).map(l=>{const m=l.match(/^([A-Za-z][A-Za-z &\/\-]{1,28}):\s*/);return m?[m[1],l.slice(m[0].length).split(",").map(s=>s.trim()).filter(Boolean).join(", ")]:["",l.split(",").map(s=>s.trim()).filter(Boolean).join(", ")]}).filter(g=>g[1])}
 function lines(t){return String(t||"").split("\n").map(s=>s.replace(/^[-•*\s]+/,"").trim()).filter(Boolean)}
 function model(){
   const contact=[S.phone,S.email,S.location].filter(Boolean).join(" | ");
   const sec=[];
   if(S.summary.trim())sec.push({h:"PROFESSIONAL SUMMARY",p:[S.summary.trim()]});
-  const sk=skillsArr(); if(sk.length)sec.push({h:"SKILLS",b:sk});
+  const sg=skillGroups(); if(sg.length)sec.push({h:"SKILLS",g:sg.some(x=>x[0])?sg:[["",skillsArr().join(", ")]]});
   const ex=S.exp.filter(e=>e.title||e.org);
   if(ex.length)sec.push({h:"WORK EXPERIENCE",items:ex.map(e=>({t:[e.title,e.org].filter(Boolean).join(", "),m:[e.place,[e.start,e.end].filter(Boolean).join(" – ")].filter(Boolean).join(" | "),b:lines(e.duties)}))});
   const ed=S.edu.filter(e=>e.qual||e.inst);
@@ -638,6 +639,7 @@ function asText(){
   out.push(m.name||"YOUR NAME"); if(m.contact)out.push(m.contact); out.push("");
   m.sec.forEach(s=>{out.push(s.h);
     (s.p||[]).forEach(p=>out.push(p));
+    (s.g||[]).forEach(([l,t])=>out.push(l?`${l}: ${t}`:t));
     (s.b||[]).forEach(b=>out.push("- "+b));
     (s.items||[]).forEach(it=>{out.push(it.t);if(it.m)out.push(it.m);it.b.forEach(b=>out.push("- "+b));out.push("")});
     out.push("")});
@@ -686,6 +688,7 @@ function renderCV(){
   let h=`<p class="nm">${esc(m.name||"Your name")}</p><p>${esc(m.contact||"Phone | Email | Town")}</p>`;
   m.sec.forEach(s=>{h+=`<h4>${esc(s.h)}</h4>`;
     (s.p||[]).forEach(x=>h+=`<p>${esc(x)}</p>`);
+    (s.g||[]).forEach(([l,t])=>h+=`<p>${l?`<strong>${esc(l)}:</strong> `:""}${esc(t)}</p>`);
     if(s.b&&s.b.length)h+=`<ul>${s.b.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
     (s.items||[]).forEach(it=>{h+=`<p><strong>${esc(it.t)}</strong></p>${it.m?`<p>${esc(it.m)}</p>`:""}${it.b.length?`<ul>${it.b.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}`})});
   $("#preview").innerHTML=h;
@@ -719,6 +722,11 @@ $("#dlPdf").onclick=async()=>{
   write(m.name||"Your name",18,"bold",2); if(m.contact)write(m.contact,10.5,"normal",8);
   m.sec.forEach(s=>{need(30);y+=6;write(s.h,11.5,"bold",0);doc.setLineWidth(.5);doc.line(M,y-8,W-M,y-8);y+=4;
     (s.p||[]).forEach(p=>write(p,10.5,"normal",2));
+    (s.g||[]).forEach(([l,t])=>{
+      if(!l){write(t,10.5,"normal",2);return}
+      doc.setFont("helvetica","bold");doc.setFontSize(10.5);const lw=doc.getTextWidth(pdfSafe(l+": "));
+      const first=doc.splitTextToSize(pdfSafe(t),W-2*M-lw);need(14);doc.text(pdfSafe(l+":"),M,y);doc.setFont("helvetica","normal");doc.text(first[0],M+lw,y);y+=14;
+      const rest=pdfSafe(t).slice(first[0].length).trim();if(rest)write(rest,10.5,"normal",0);y+=2});
     (s.b||[]).forEach(bullet);
     (s.items||[]).forEach(it=>{write(it.t,10.5,"bold",0);if(it.m)write(it.m,10,"italic",1);it.b.forEach(bullet);y+=6})});
   const out=doc.output("arraybuffer");
@@ -874,7 +882,8 @@ const ZQ=[
 const ZTICK=[["t1","Every field on the form is filled in (write N/A where it doesn’t apply, never leave blanks)"],["t2","Every page is initialled and the form is signed and dated"],["t3","The reference number matches the advert exactly"],["t4","One separate Z83 for each post you apply for"],["t5","Z83 and CV saved together as ONE PDF if emailing (no photos)"],["t6","Sent before the closing date and time"]];
 function zQs(){
   $("#zQs").innerHTML=ZQ.map(([k,q])=>`<div class="yn${Z[k]?"":" unanswered"}"><span>${esc(q)}</span><select data-zq="${k}" aria-label="${esc(q)}"><option value="">Choose…</option>${(k==="q7"?["Yes","No","N/A"]:["No","Yes"]).map(o=>`<option${Z[k]===o?" selected":""}>${o}</option>`).join("")}</select></div>`).join("");
-  document.querySelectorAll("[data-zq]").forEach(s=>s.onchange=()=>{Z[s.dataset.zq]=s.value;saveZ();renderZ83()});
+  document.querySelectorAll("[data-zq]").forEach(s=>s.onchange=()=>{Z[s.dataset.zq]=s.value;if(s.dataset.zq==="q6")Z.q7=s.value==="No"?"N/A":(Z.q7==="N/A"?"":Z.q7);saveZ();renderZ83()});
+  const q7=document.querySelector('[data-zq="q7"]');if(q7&&Z.q6==="No"){q7.disabled=true;q7.closest(".yn").querySelector("span").insertAdjacentHTML("beforeend",' <small style="display:block;color:var(--soft)">N/A, because you don’t do business with the State.</small>')}
 }
 document.querySelectorAll("[data-z]").forEach(el=>{el.value=Z[el.dataset.z]||"";el.addEventListener("input",()=>{Z[el.dataset.z]=el.value;saveZ();zStatus()});el.addEventListener("change",()=>{Z[el.dataset.z]=el.value;saveZ();zStatus()})});
 $("#zFill").onclick=()=>{
@@ -901,7 +910,7 @@ function zStatus(){
   $("#zReady").style.color=m.length?"var(--bad)":"var(--good)";
 }
 function renderZ83(){
-  zQs();
+  z83Smart(false);zQs();
   $("#zCheck").innerHTML=ZTICK.map(([k,t])=>`<li class="tick ${Z[k]?"ok":"no"}" data-zt="${k}" role="checkbox" aria-checked="${!!Z[k]}" tabindex="0">${esc(t)}</li>`).join("");
   document.querySelectorAll("[data-zt]").forEach(li=>{const f=()=>{Z[li.dataset.zt]=!Z[li.dataset.zt];saveZ();renderZ83()};li.onclick=f;li.onkeydown=e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();f()}}});
   zStatus();
@@ -1212,9 +1221,15 @@ function parseCv(raw){
   let sum=(sec.summary||[]).join(" ");
   if(!sum){const long=(sec.top||[]).filter(l=>l.length>80);if(long.length)sum=long.join(" ")}
   out.summary=polishText(sum.replace(/^\s*I\s+am\s+a\s+/i,"A "),log);
-  // skills
-  const sk=[];(sec.skills||[]).forEach(l=>l.replace(/^[\s•●▪◦\-–—*·>]+/,"").replace(/^[A-Za-z][A-Za-z &\/\-]{1,28}:\s*/,"").split(/[,;|•●▪]|\s{2,}/).forEach(x=>{x=x.replace(/^[\s\-–*·>]+/,"").replace(/[.]$/,"").trim();if(x.length>=2&&x.length<=45)sk.push(polishText(x,log))}));
-  const seen=new Set();out.skills=sk.filter(x=>{const k=x.toLowerCase();if(seen.has(k))return false;seen.add(k);return true}).map(x=>x[0].toUpperCase()+x.slice(1)).join(", ");
+  // skills: keep groups like "Front-End: React.js, Redux" on their own lines
+  const groups=[],seen=new Set();let flat=[];
+  const clean=x=>{x=x.replace(/^[\s\-–*·>]+/,"").replace(/[.]$/,"").trim();return x.length>=2&&x.length<=45?polishText(x[0].toUpperCase()+x.slice(1),log):""};
+  const uniq=a=>a.filter(x=>{const k=x.toLowerCase();if(!x||seen.has(k))return false;seen.add(k);return true});
+  (sec.skills||[]).forEach(l=>{l=l.replace(/^[\s•●▪◦\-–—*·>]+/,"");const m=l.match(/^([A-Za-z][A-Za-z &\/\-]{1,28}):\s*(.+)$/);
+    const items=(m?m[2]:l).split(/[,;|•●▪]|\s{2,}/).map(clean);
+    if(m){const u=uniq(items);if(u.length)groups.push(`${m[1].trim()}: ${u.join(", ")}`)}else flat=flat.concat(items)});
+  flat=uniq(flat);
+  out.skills=groups.length?groups.concat(flat.length?[`Other: ${flat.join(", ")}`]:[]).join("\n"):flat.join(", ");
   // experience
   const isBullet=l=>/^[•●▪◦\-–—*·>]/.test(l);
   const E=sec.exp||[];const hasBullets=E.some(isBullet);
@@ -1320,9 +1335,6 @@ function sanity(res){
     if(INST.test(e.qual)&&!/(diploma|degree|certificate|bachelor|matric|grade|n\d|honours|master)/i.test(e.qual))flags.push({list:"edu",i,f:"qual",msg:`Education ${i+1}: “${e.qual}” looks like a school name, not a qualification.`});
     if(!e.year)flags.push({list:"edu",i,f:"year",msg:`Education ${i+1} has no year.`});
   });
-  // skills: drop category labels
-  const sk=o.skills.split(", ").map(s=>s.replace(/^[A-Za-z][A-Za-z &\/\-]{1,28}:\s*/,"")).filter(Boolean);
-  if(sk.join(", ")!==o.skills){o.skills=sk.join(", ");log.notes.push("Removed category labels like “Front-End:” from your skills.")}
   // certificates: move personal lines out
   const keep=[];o.certs.split("\n").forEach(l=>{
     if(/^languages?\s*:/i.test(l)){if(!o.languages)o.languages=l.replace(/^languages?\s*:\s*/i,"");return}
@@ -1345,7 +1357,7 @@ function showReport(res,confirm){
   if(log.caps.size)items.push(`Corrected capital letters for ${esc([...log.caps].slice(0,6).join(", "))}`);
   if(log.grammar)items.push(`Fixed ${log.grammar} small grammar slip${log.grammar===1?"":"s"} (“a” before a vowel → “an”)`);
   if(log.firstPerson)items.push(`Started ${log.firstPerson} dut${log.firstPerson===1?"y":"ies"} with an action word instead of “I”`);
-  items.push(`Found ${out.exp.length} job${out.exp.length===1?"":"s"}, ${out.edu.length} qualification${out.edu.length===1?"":"s"} and ${out.skills?out.skills.split(", ").length:0} skills.`);
+  items.push(`Found ${out.exp.length} job${out.exp.length===1?"":"s"}, ${out.edu.length} qualification${out.edu.length===1?"":"s"} and ${out.skills?out.skills.split("\n").flatMap(l=>l.replace(/^[^:]{1,30}:\s*/,"").split(", ")).filter(Boolean).length:0} skills.`);
   log.notes.forEach(n=>items.push(esc(n)));
   const found=`<div class="found"><strong>What we found</strong>${out.exp.map(e=>`<p>${esc(e.title||"(no title)")}${e.org?" at "+esc(e.org):""}${e.start?` (${esc(e.start)} – ${esc(e.end||"")})`:""}</p>`).join("")}${out.edu.map(e=>`<p>${esc(e.qual)}${e.inst?", "+esc(e.inst):""}${e.year?" "+esc(e.year):""}</p>`).join("")}</div>`;
   const warns=log.warn.concat((res.flags||[]).map(f=>f.msg));
@@ -1494,6 +1506,30 @@ function renderDocs(){
   document.querySelectorAll("[data-doc]").forEach(c=>c.onchange=()=>{DOCS[c.dataset.doc]=Object.assign(DOCS[c.dataset.doc]||{},{have:c.checked});saveDocs();renderDocs()});
   document.querySelectorAll("[data-cert]").forEach(c=>c.onchange=()=>{DOCS[c.dataset.cert]=Object.assign(DOCS[c.dataset.cert]||{},{cert:c.value,have:true});saveDocs();renderDocs()});
 }
+
+/* Z83: use the SA ID number to fill date of birth and gender; keep business questions consistent */
+function idInfo(id){
+  const d=String(id||"").replace(/\D/g,"");if(d.length!==13)return null;
+  let sum=0;for(let i=0;i<12;i++){let n=+d[i];if(i%2===1){n*=2;if(n>9)n-=9}sum+=n}
+  if((10-(sum%10))%10!==+d[12])return {bad:true};
+  const yy=+d.slice(0,2),mm=+d.slice(2,4),dd=+d.slice(4,6);if(mm<1||mm>12||dd<1||dd>31)return {bad:true};
+  const cy=new Date().getFullYear()%100,yr=(yy>cy?1900:2000)+yy;
+  return {dob:`${yr}-${String(mm).padStart(2,"0")}-${String(dd).padStart(2,"0")}`,gender:+d.slice(6,10)<5000?"Female":"Male",citizen:d[10]==="0"};
+}
+function z83Smart(fromId){
+  const info=idInfo(Z.idno);const note=$("#zIdNote");
+  if(info&&info.bad){note.textContent="This ID number doesn’t look right. Check every digit against your ID.";note.style.color="var(--bad)"}
+  else if(info){
+    let changed=[];
+    if(!Z.dob||fromId){if(Z.dob!==info.dob){Z.dob=info.dob;changed.push("date of birth")}}
+    if(!Z.gender){Z.gender=info.gender;changed.push("gender")}
+    if(!Z.citizen&&info.citizen){Z.citizen="Yes";changed.push("citizenship")}
+    if(changed.length||fromId){note.textContent=changed.length?`Filled in your ${changed.join(", ")} from your ID number. Check they’re right.`:"";note.style.color="var(--good)"}
+    if(changed.length){saveZ();document.querySelectorAll("[data-z]").forEach(el=>el.value=Z[el.dataset.z]||"")}
+  } else note.textContent="";
+  if(Z.q6==="No"&&Z.q7!=="N/A"){Z.q7="N/A";saveZ()}
+}
+$("#z_id").addEventListener("change",()=>{z83Smart(true);renderZ83()});
 })();
 
 
