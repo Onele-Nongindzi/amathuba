@@ -9,7 +9,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <script>try{if(localStorage.getItem("amathuba-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
-<title>Amathuba: CV Builder & Opportunities</title>
+<title>Mathuba Careers: CV Builder & Opportunities</title>
 <style>
 :root{
   --paper:#ffffff; --ground:#ffffff; --ink:#211a28; --soft:#5c5266; --line:#e0d8e7;
@@ -189,7 +189,7 @@ input.flagged,textarea.flagged{border-color:var(--bad);box-shadow:0 0 0 2px rgba
 <div class="wrap">
 <header>
   <div class="topbar">
-  <p class="brand" style="margin:0">Amathuba <span style="font-weight:400;color:var(--soft)">by Onele Foundation</span></p>
+  <p class="brand" style="margin:0">Mathuba Careers</p>
   <button class="theme-btn" type="button" id="themeBtn" aria-pressed="false"></button>
   </div>
   <h1>Build a CV that gets read, then find where to apply.</h1>
@@ -213,7 +213,7 @@ input.flagged,textarea.flagged{border-color:var(--bad);box-shadow:0 0 0 2px rgba
 
   <div class="opp" id="importBox">
     <h4>Already have a CV?</h4>
-    <p>Upload it and Amathuba will read it, fix common spelling mistakes, sort it into ATS-friendly headings and fill in this form for you to check.</p>
+    <p>Upload it and Mathuba Careers will read it, fix common spelling mistakes, sort it into ATS-friendly headings and fill in this form for you to check.</p>
     <div class="app-actions">
       <button class="btn small" type="button" id="cvPick">Upload my CV</button>
       <input type="file" id="cvFile" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,application/octet-stream" hidden>
@@ -402,7 +402,7 @@ input.flagged,textarea.flagged{border-color:var(--bad);box-shadow:0 0 0 2px rgba
   <div id="trList"></div>
 
   <h3 style="margin-top:24px">Documents ready</h3>
-  <p class="hint">Tick what you have, so you’re ready when an employer asks. Amathuba doesn’t store the documents, only your ticks and dates.</p>
+  <p class="hint">Tick what you have, so you’re ready when an employer asks. Mathuba Careers doesn’t store the documents, only your ticks and dates.</p>
   <div id="docList"></div>
   <p class="hint" id="docTip"></p>
 </section>
@@ -506,7 +506,7 @@ input.flagged,textarea.flagged{border-color:var(--bad);box-shadow:0 0 0 2px rgba
 <!-- STEP 7 -->
 <section id="scam" role="tabpanel" hidden>
   <h2>Scam checker</h2>
-  <p class="hint">Got a job offer by WhatsApp, SMS, email or Facebook? Paste it here and Amathuba will look for the warning signs of a job scam. Nothing you paste leaves this phone.</p>
+  <p class="hint">Got a job offer by WhatsApp, SMS, email or Facebook? Paste it here and Mathuba Careers will look for the warning signs of a job scam. Nothing you paste leaves this phone.</p>
   <label for="scamText">Paste the job advert or message</label>
   <textarea id="scamText" style="min-height:160px" placeholder="Paste the full message, including any email address, phone number or link"></textarea>
   <p class="err" id="scamErr" role="alert"></p>
@@ -516,7 +516,7 @@ input.flagged,textarea.flagged{border-color:var(--bad);box-shadow:0 0 0 2px rgba
     <p style="margin:0">Real employers and government never ask you to pay for a job, training, uniforms or “admin”. Never send your ID, bank details, PIN or a one-time PIN (OTP) before you have checked the job is real. Look the company up yourself and call its official number, not the number in the message. Government jobs are advertised on gov.za websites and in the Public Service Vacancy Circular.</p></div>
 </section>
 <footer style="border-top:1px solid var(--line);margin-top:30px;padding-top:16px;color:var(--soft);font-size:.88rem">
-  <p style="margin:0 0 4px">Amathuba was created by Onele Nongindzi for Onele Foundation.</p>
+  <p style="margin:0 0 4px">Mathuba Careers was created by Onele Nongindzi for Onele Foundation.</p>
   <p style="margin:0 0 4px">Your information is saved only on this device. It is never sent to Onele Foundation or anyone else.</p>
   <p style="margin:0">© 2026 Onele Nongindzi. All rights reserved.</p>
 </footer>
@@ -1465,7 +1465,7 @@ function icsFor(title,dateStr,desc,alarms){
   const d=toD(dateStr),n=new Date(d);n.setDate(n.getDate()+1);
   const stamp=new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d+Z$/,"Z");
   const escI=s=>String(s||"").replace(/\\/g,"\\\\").replace(/[,;]/g,m=>"\\"+m).replace(/\n/g,"\\n");
-  return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Onele Foundation//Amathuba//EN","CALSCALE:GREGORIAN","BEGIN:VEVENT",
+  return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Onele Foundation//Mathuba Careers//EN","CALSCALE:GREGORIAN","BEGIN:VEVENT",
     `UID:${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}@amathuba`,`DTSTAMP:${stamp}`,
     `DTSTART;VALUE=DATE:${ymd(d)}`,`DTEND;VALUE=DATE:${ymd(n)}`,`SUMMARY:${escI(title)}`,`DESCRIPTION:${escI(desc)}`,
     ...alarms.flatMap(t=>["BEGIN:VALARM","ACTION:DISPLAY",`DESCRIPTION:${escI(title)}`,`TRIGGER:${t}`,"END:VALARM"]),
@@ -1475,7 +1475,7 @@ function gcal(title,dateStr,desc){const d=toD(dateStr),n=new Date(d);n.setDate(n
 function calMenu(a,btn){
   const card=btn.closest(".app");const old=card.querySelector(".calbox");if(old){old.remove();return}
   const name=[a.job,a.org].filter(Boolean).join(" at ")||"Job application";
-  const desc=[a.ref?"Reference: "+a.ref:"",a.link||"","Added by Amathuba"].filter(Boolean).join("\n");
+  const desc=[a.ref?"Reference: "+a.ref:"",a.link||"","Added by Mathuba Careers"].filter(Boolean).join("\n");
   const items=[];
   if(a.close&&days(a.close)>=0)items.push({k:"close",t:`Closing date: ${name}`,d:a.close,al:["-P2D","-PT12H"],label:`Closing date (${fmt(a.close)})`});
   if(a.interview&&days(a.interview)>=0)items.push({k:"iv",t:`Interview: ${name}`,d:a.interview,al:["-P1D","-PT14H"],label:`Interview (${fmt(a.interview)})`});
