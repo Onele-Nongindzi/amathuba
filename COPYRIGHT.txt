@@ -6,3 +6,5 @@ No part of this software may be copied, modified or redistributed without writte
 Third-party component: jsPDF (vendor/jspdf.umd.min.js) is used under the MIT License, (c) James Hall and contributors.
 Third-party component: pdf.js (vendor/pdf.min.js, vendor/pdf.worker.min.js) is used under the Apache License 2.0, (c) Mozilla Foundation. See vendor/pdfjs-LICENSE.txt.
 Third-party component: mammoth.js (vendor/mammoth.browser.min.js) is used under the BSD 2-Clause License, (c) Michael Williamson. See vendor/mammoth-LICENSE.txt.
+Third-party component: pdf-lib (vendor/pdf-lib.min.js) is used under the MIT License, (c) Andrew Dillon. See vendor/pdf-lib-LICENSE.md.
+Official form: forms/z83-blank.pdf is the Z83 Application for Employment form (effective 01 January 2021) of the South African public service, included unchanged so it can be filled in on the device.

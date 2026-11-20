@@ -47,3 +47,7 @@ Opportunities posted by Onele Foundation live in `data/local-opportunities.json`
 3. Click the GitHub link on that page, replace the file's contents with what you copied, and click **Commit changes**.
 
 Only post opportunities you have verified. Never post anything that asks applicants for money.
+
+## Official Z83
+
+`forms/z83-blank.pdf` is the official Z83 (effective 01 January 2021). The Z83 helper writes the user's answers onto it on the device and can join the CV after it as one PDF. If DPSA publishes a new version of the form, the positions in `fillOfficialZ83()` in `index.html` must be checked again.

@@ -178,6 +178,12 @@ input.flagged,textarea.flagged{border-color:var(--bad);box-shadow:0 0 0 2px rgba
 .doc small{display:block;color:var(--soft);font-weight:400}
 .doc .cert{display:flex;gap:6px;align-items:center;font-size:.85rem;color:var(--soft)}
 .doc .cert input{width:auto;padding:5px 8px;font-size:.85rem}
+.pads{display:grid;grid-template-columns:2fr 1fr;gap:12px}
+.pad{width:100%;height:auto;aspect-ratio:10/3;background:#fff;border:1px solid var(--line);border-radius:8px;touch-action:none;display:block;margin-bottom:6px}
+#iniPad{aspect-ratio:5/3}
+.jobrow{padding:8px 0;border-top:1px solid var(--line);font-size:.93rem}
+.jobrow strong{display:block;margin-bottom:4px}
+@media (max-width:560px){.pads{grid-template-columns:1fr}}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);
   padding:10px 16px;border-radius:10px;font-size:.92rem;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
 .toast.show{opacity:1}
@@ -474,6 +480,29 @@ input.flagged,textarea.flagged{border-color:var(--bad);box-shadow:0 0 0 2px rgba
     <select id="z_reapp" data-z="reapp"><option value="">Choose…</option><option>No</option><option>Yes</option><option>N/A: never worked in the public service</option></select>
   </fieldset>
 
+  <fieldset><legend>More for the official form</legend>
+    <p class="hint">These go straight onto the official Z83 when you tap “Fill the official Z83” below.</p>
+    <label for="z_current">Current study, if any <small>(institution and qualification)</small></label>
+    <input id="z_current" data-z="current" placeholder="None">
+    <h3 style="margin-top:16px">Part F: your jobs, with reasons for leaving</h3>
+    <p class="hint">Taken from your CV (up to three jobs). Change the jobs in step 1.</p>
+    <div id="zJobs"></div>
+    <h3 style="margin-top:16px">Part G: references</h3>
+    <div id="zRefs"></div>
+    <h3 style="margin-top:16px">Signature and initials <small style="font-weight:400;color:var(--soft)">(optional)</small></h3>
+    <p class="hint">Draw with your finger. Some departments accept a signature drawn on a phone; others want a handwritten signature on a printed copy, so check the advert. If you skip this, print the filled form and sign and initial it by hand.</p>
+    <div class="pads">
+      <div><label>Signature</label><canvas class="pad" id="sigPad" width="600" height="180" aria-label="Draw your signature"></canvas><button class="btn ghost small" type="button" data-padclear="sigPad">Clear</button></div>
+      <div><label>Initials</label><canvas class="pad" id="iniPad" width="300" height="180" aria-label="Draw your initials"></canvas><button class="btn ghost small" type="button" data-padclear="iniPad">Clear</button></div>
+    </div>
+  </fieldset>
+
+  <div class="opp"><h4>Fill the official Z83</h4>
+    <p>Amathuba Careers writes your answers onto the official Z83 (effective 01 January 2021), ready to email or print. Read every page before you send it.</p>
+    <div class="btns" style="margin-bottom:0"><button class="btn" type="button" id="zOfficial">Download filled Z83</button><button class="btn ghost" type="button" id="zOfficialCv">Z83 + CV as one PDF</button></div>
+    <p class="hint" id="zOffNote" style="margin:8px 0 0"></p>
+  </div>
+
   <h3>Before you send it</h3>
   <ul class="checks" id="zCheck"></ul>
   <p class="hint" id="zReady"></p>
@@ -710,8 +739,8 @@ function loadJsPDF(){return new Promise((res,rej)=>{
   const s=document.createElement("script");s.src="vendor/jspdf.umd.min.js";
   s.onload=()=>res(window.jspdf);s.onerror=rej;document.head.appendChild(s)})}
 function pdfSafe(t){return String(t).replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,"-").replace(/•/g,"-").replace(/[^\x09\x0A\x0D\x20-\x7E\u00A0-\u00FF]/g,"")}
-$("#dlPdf").onclick=async()=>{
-  let lib; try{lib=await loadJsPDF()}catch(e){toast("The PDF tool didn’t load. Refresh the page, or use Download as text.");return}
+async function buildCvPdf(){
+  let lib; try{lib=await loadJsPDF()}catch(e){toast("The PDF tool didn’t load. Refresh the page, or use Download as text.");return null}
   const doc=new lib.jsPDF({unit:"pt",format:"a4"});const W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),M=50;let y=M;
   const need=h=>{if(y+h>H-M){doc.addPage();y=M}};
   const write=(t,size,style,gap)=>{doc.setFont("helvetica",style);doc.setFontSize(size);
@@ -729,9 +758,9 @@ $("#dlPdf").onclick=async()=>{
       const rest=pdfSafe(t).slice(first[0].length).trim();if(rest)write(rest,10.5,"normal",0);y+=2});
     (s.b||[]).forEach(bullet);
     (s.items||[]).forEach(it=>{write(it.t,10.5,"bold",0);if(it.m)write(it.m,10,"italic",1);it.b.forEach(bullet);y+=6})});
-  const out=doc.output("arraybuffer");
-  saveFile(fname("pdf"),out);
-};
+  return doc.output("arraybuffer");
+}
+$("#dlPdf").onclick=async()=>{const out=await buildCvPdf();if(out)saveFile(fname("pdf"),out)};
 $("#dlTxt").onclick=()=>saveFile(fname("txt"),asText());
 $("#copyTxt").onclick=async()=>{
   try{await navigator.clipboard.writeText(asText());toast("CV text copied.")}
@@ -1540,6 +1569,116 @@ function z83Smart(fromId){
   if(Z.q6==="No"&&Z.q7!=="N/A"){Z.q7="N/A";saveZ()}
 }
 $("#z_id").addEventListener("change",()=>{z83Smart(true);renderZ83()});
+
+/* Fill the official Z83 (forms/z83-blank.pdf) by writing answers at the right places */
+function zRenderExtra(){
+  const jobs=S.exp.filter(e=>e.title||e.org).slice(0,3);Z.reasons=Z.reasons||[];Z.refList=Z.refList||[{},{},{}];
+  $("#zJobs").innerHTML=jobs.length?jobs.map((e,i)=>`<div class="jobrow"><strong>${esc([e.title,e.org].filter(Boolean).join(" at "))}${e.start?` (${esc(e.start)} – ${esc(e.end||"")})`:""}</strong>
+    <label for="zr${i}" class="sr-only">Reason for leaving</label><input id="zr${i}" data-reason="${i}" placeholder="${/present|current/i.test(e.end||"")?"Currently employed":"Reason for leaving, e.g. Contract ended"}" value="${esc(Z.reasons[i]||"")}"></div>`).join(""):`<p class="hint">No jobs in your CV yet. Add them in step 1, or the form will say “Refer to attached CV”.</p>`;
+  $("#zRefs").innerHTML=[0,1,2].map(i=>{const r=Z.refList[i]||{};return `<div class="grid" style="margin-bottom:8px">
+    <div><label for="rn${i}">Reference ${i+1}: name</label><input id="rn${i}" data-ref="${i}" data-rk="n" value="${esc(r.n||"")}"></div>
+    <div><label for="rr${i}">Relationship to you</label><input id="rr${i}" data-ref="${i}" data-rk="r" placeholder="e.g. Former supervisor" value="${esc(r.r||"")}"></div>
+    <div><label for="rt${i}">Phone (office hours)</label><input id="rt${i}" data-ref="${i}" data-rk="t" inputmode="tel" value="${esc(r.t||"")}"></div></div>`}).join("");
+  document.querySelectorAll("[data-reason]").forEach(el=>el.oninput=()=>{Z.reasons[+el.dataset.reason]=el.value;saveZ()});
+  document.querySelectorAll("[data-ref]").forEach(el=>el.oninput=()=>{const i=+el.dataset.ref;Z.refList[i]=Z.refList[i]||{};Z.refList[i][el.dataset.rk]=el.value;saveZ()});
+}
+function setupPad(id,key){
+  const c=document.getElementById(id),x=c.getContext("2d");let drawing=false,last=null;
+  x.lineWidth=5;x.lineCap="round";x.lineJoin="round";x.strokeStyle="#0a1a5c";
+  if(Z[key]){const img=new Image();img.onload=()=>x.drawImage(img,0,0);img.src=Z[key]}
+  const pos=e=>{const r=c.getBoundingClientRect();return [(e.clientX-r.left)*c.width/r.width,(e.clientY-r.top)*c.height/r.height]};
+  c.addEventListener("pointerdown",e=>{drawing=true;last=pos(e);c.setPointerCapture(e.pointerId)});
+  c.addEventListener("pointermove",e=>{if(!drawing)return;const p=pos(e);x.beginPath();x.moveTo(...last);x.lineTo(...p);x.stroke();last=p});
+  const end=()=>{if(!drawing)return;drawing=false;Z[key]=c.toDataURL("image/png");saveZ()};
+  c.addEventListener("pointerup",end);c.addEventListener("pointercancel",end);c.addEventListener("pointerleave",end);
+  document.querySelector(`[data-padclear="${id}"]`).onclick=()=>{x.clearRect(0,0,c.width,c.height);delete Z[key];saveZ()};
+}
+setupPad("sigPad","sig");setupPad("iniPad","ini");
+const origRenderZ83=renderZ83;renderZ83=function(){origRenderZ83();zRenderExtra()};
+function winAnsi(s){return String(s||"").replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,"-").replace(/…/g,"...").replace(/[^\x20-\x7E\u00A0-\u00FF]/g,"")}
+function ym(s){s=String(s||"").trim();if(/present|current|now|date/i.test(s))return ["",""];
+  const M={jan:"01",feb:"02",mar:"03",apr:"04",may:"05",jun:"06",jul:"07",aug:"08",sep:"09",oct:"10",nov:"11",dec:"12"};
+  const mm=(s.match(/[a-z]{3}/i)||[""])[0].toLowerCase(),yr=(s.match(/(19|20)(\d{2})/)||["","",""])[2];
+  const num=s.match(/^(\d{1,2})[\/\-](\d{2,4})$/);if(num)return [num[1].padStart(2,"0"),num[2].slice(-2)];
+  return [M[mm]||"",yr]}
+function parseLangs(t){return String(t||"").split("\n").map(l=>l.trim()).filter(Boolean).map(l=>{
+  const name=l.split(/[:\-–(]/)[0].trim();const r=(l.match(/\b(good|fair|poor)\b/gi)||[]).map(x=>x[0].toUpperCase()+x.slice(1).toLowerCase());
+  const SAL={english:"English",afrikaans:"Afrikaans",isixhosa:"isiXhosa",xhosa:"isiXhosa",isizulu:"isiZulu",zulu:"isiZulu",isindebele:"isiNdebele",ndebele:"isiNdebele",sesotho:"Sesotho",sotho:"Sesotho",sepedi:"Sepedi",pedi:"Sepedi",setswana:"Setswana",tswana:"Setswana",siswati:"siSwati",swati:"siSwati",tshivenda:"Tshivenda",venda:"Tshivenda",xitsonga:"Xitsonga",tsonga:"Xitsonga","sign language":"SA Sign Language"};
+  const nm=SAL[name.toLowerCase()]||(name?name[0].toUpperCase()+name.slice(1):"");
+  return {name:nm,speak:r[0]||"",write:r[1]||r[0]||""}}).filter(x=>x.name).slice(0,5)}
+function parseQuals(t){return String(t||"").split("\n").map(l=>l.trim()).filter(Boolean).map(l=>{
+  const p=l.split(/\s*[,|]\s*/);let yr="";if(/^(19|20)\d{2}$/.test(p[p.length-1]))yr=p.pop();
+  const INSTR=/\b(university|college|school|institute|academy|tvet|technikon|unisa)\b/i;
+  let school=p.find(x=>INSTR.test(x))||"";const rest=p.filter(x=>x!==school);
+  return {school:school||(rest.length>1?rest.shift():""),qual:rest.join(", "),yr}}).slice(0,4)}
+async function fillOfficialZ83(withCv){
+  const note=$("#zOffNote");note.textContent="Preparing your Z83…";note.style.color="var(--soft)";
+  try{
+    await loadScript("vendor/pdf-lib.min.js");const {PDFDocument,StandardFonts,rgb}=window.PDFLib;
+    const blank=await (await fetch("forms/z83-blank.pdf")).arrayBuffer();
+    const pdf=await PDFDocument.load(blank);const font=await pdf.embedFont(StandardFonts.Helvetica);
+    const [p1,p2]=pdf.getPages();const INK=rgb(0.04,0.1,0.36);const H=792;
+    const fit=(t,w,size)=>{t=winAnsi(t);while(size>5&&font.widthOfTextAtSize(t,size)>w)size-=0.25;return size};
+    const T=(pg,t,x,top,w,size=9)=>{t=winAnsi(t);if(!t.trim())return;let s=fit(t,w,size);
+      if(font.widthOfTextAtSize(t,s)>w){while(t.length&&font.widthOfTextAtSize(t+"…",s)>w)t=t.slice(0,-1);t+="..."}
+      pg.drawText(t,{x,y:H-top,size:s,font,color:INK})};
+    const C=(pg,t,x0,x1,top,size=9)=>{t=winAnsi(t);if(!t)return;const s=fit(t,x1-x0-4,size);pg.drawText(t,{x:x0+(x1-x0-font.widthOfTextAtSize(t,s))/2,y:H-top,size:s,font,color:INK})};
+    const wrap=(pg,t,x,top,w,maxLines,lh=10,size=9)=>{const words=winAnsi(t).split(/\s+/);let line="",n=0,out=[];
+      words.forEach(wd=>{const tryL=line?line+" "+wd:wd;if(font.widthOfTextAtSize(tryL,size)>w&&line){out.push(line);line=wd}else line=tryL});if(line)out.push(line);
+      if(out.length>maxLines){out=out.slice(0,maxLines);}out.forEach((l,i)=>T(pg,l,x,top+i*lh,w,size))};
+    const O=(pg,cx,ctop,w)=>pg.drawEllipse({x:cx,y:H-ctop,xScale:w/2,yScale:7,borderColor:INK,borderWidth:1.2});
+    const YN=(ans,top,yesX=495,noX=549)=>{if(ans==="Yes")O(p1,yesX,top+4,26);else if(ans==="No")O(p1,noX,top+4,24);else if(ans==="N/A")T(p1,"N/A",473,top+7,20,7.5)};
+    // A. The advertised post
+    wrap(p1,Z.post,242,155,158,2);wrap(p1,Z.dept,409,146,166,3);wrap(p1,Z.ref,242,200,158,3);wrap(p1,Z.start,409,213,166,2);
+    // B. Personal information
+    T(p1,(Z.surname||"").toUpperCase(),353,277,222);T(p1,Z.names,353,290,222);
+    if(Z.dob){const [y,m,d]=Z.dob.split("-");T(p1,`${d}/${m}/${y.slice(2)}`,289,305,56,9)}
+    const idd=String(Z.idno||"").replace(/\D/g,"");const IDX=[403,421,434.6,448,459.8,475.1,488.9,501.7,514.5,527.3,540.1,552.9,565.7,578.6];
+    if(idd.length===13)idd.split("").forEach((c,i)=>C(p1,c,IDX[i],IDX[i+1],307,10));else T(p1,Z.idno,407,307,168);
+    if(Z.passport&&!/^n\/?a$/i.test(Z.passport))T(p1,Z.passport,407,326,168);else C(p1,"N/A",403,578.6,326,8.5);
+    const RACE={African:[301,30],White:[365.5,26],Coloured:[426.5,40],Indian:[494.5,28],Other:[548.5,26]};if(RACE[Z.race])O(p1,RACE[Z.race][0],339,RACE[Z.race][1]);
+    if(Z.gender==="Female")O(p1,494.5,354,32);else if(Z.gender==="Male")O(p1,548.5,354,24);
+    YN(Z.disability,366);YN(Z.citizen,381);
+    T(p1,Z.citizen==="Yes"?"N/A":(Z.nationality||""),474,403,102);
+    YN(Z.citizen==="Yes"?"N/A":Z.permit,412);
+    YN(Z.q1,424);YN(Z.q2,455);YN(Z.q3,486);YN(Z.q4,520);YN(Z.q5,551);YN(Z.q8,592);YN(Z.q6,620);YN(Z.q6==="No"?"N/A":Z.q7,658);
+    C(p1,Z.yrsPriv||"0",470.6,518.4,713);C(p1,Z.yrsPub||"0",518.4,578.6,713);
+    C(p1,Z.regDate||"N/A",470.6,518.4,746,8);C(p1,Z.regNo||"N/A",518.4,578.6,746,8);
+    // C. Contact details
+    T(p2,Z.lang,475,92,100);
+    const MET={Post:[360.3,24],"E-mail":[426,32],Fax:[489,22],Telephone:[550,48]};if(MET[Z.method])O(p2,MET[Z.method][0],111,MET[Z.method][1]);
+    const contact=[Z.phone,Z.email].filter(Boolean);contact.forEach((c,i)=>T(p2,c,331,138+i*13,244));
+    // D. Language proficiency
+    const LC=[210,282,353.2,425.6,502.1,578.6];parseLangs(Z.langs).forEach((l,i)=>{C(p2,l.name,LC[i],LC[i+1],221,8);C(p2,l.speak,LC[i],LC[i+1],236,8.5);C(p2,l.write,LC[i],LC[i+1],255,8.5)});
+    // E. Qualifications (highest to lowest)
+    const QR=[318,337,356,375];parseQuals(Z.quals).forEach((q,i)=>{T(p2,q.school,82,QR[i],183,8);T(p2,q.qual,271,QR[i],174,8);C(p2,q.yr,449,578.6,QR[i],8.5)});
+    T(p2,Z.current||"None",240,391,336,8);
+    // F. Work experience
+    const jobs=S.exp.filter(e=>e.title||e.org).slice(0,3);const JR=[463,482,501];
+    if(jobs.length)jobs.forEach((e,i)=>{const cur=/present|current/i.test(e.end||"");const [sm,sy]=ym(e.start),[em,ey]=ym(e.end);
+      T(p2,e.org,82,JR[i],134,8);T(p2,e.title,222,JR[i],84,8);C(p2,sm,308.6,340,JR[i],8);C(p2,sy,340,371,JR[i],8);
+      if(cur)C(p2,"Present",398.6,439,JR[i],7.5);else{C(p2,em,371,398.6,JR[i],8);C(p2,ey,398.6,439,JR[i],8)}
+      T(p2,(Z.reasons||[])[i]||(cur?"Currently employed":""),442,JR[i],134,8)});
+    else T(p2,"Refer to attached CV",82,JR[0],200,8);
+    if(Z.reapp==="Yes")O(p2,452,517,24);else if(Z.reapp==="No")O(p2,488.5,517,22);else if(Z.reapp)T(p2,"N/A",420,520,22,7.5);
+    // G. References
+    const RR=[602,619.5,637];(Z.refList||[]).forEach((r,i)=>{if(!r||i>2)return;T(p2,r.n,82,RR[i],144,8.5);T(p2,r.r,232,RR[i],144,8.5);T(p2,r.t,383,RR[i],192,8.5)});
+    // Declaration date, signature, initials
+    const today=new Date();T(p2,`${String(today.getDate()).padStart(2,"0")}/${String(today.getMonth()+1).padStart(2,"0")}/${today.getFullYear()}`,336,705,120,9.5);
+    if(Z.sig){const img=await pdf.embedPng(Z.sig);const w=150,h=w*img.height/img.width;p2.drawImage(img,{x:128,y:H-720,width:w,height:Math.min(h,32)})}
+    if(Z.ini){const img=await pdf.embedPng(Z.ini);[p1,p2].forEach(pg=>pg.drawImage(img,{x:542,y:H-776,width:32,height:Math.min(19,32*img.height/img.width)}))}
+    // Join the CV after the form, if asked
+    if(withCv){const cvBytes=await buildCvPdf();if(cvBytes){const cv=await PDFDocument.load(cvBytes);(await pdf.copyPages(cv,cv.getPageIndices())).forEach(pg=>pdf.addPage(pg))}}
+    const bytes=await pdf.save();
+    const who=((Z.surname||S.name||"My").trim()).replace(/[^\w\- ]+/g,"").replace(/\s+/g,"_");
+    saveFile(`${withCv?"Z83_and_CV":"Z83"}_${who}${Z.ref?"_"+Z.ref.replace(/[^\w-]+/g,"_"):""}.pdf`,bytes);
+    const miss=zMissing();
+    note.innerHTML=miss.length?`<span style="color:var(--bad)">Saved, but some answers are still empty: ${esc(miss.join(", "))}. Fill them in and download again.</span>`:`Saved. ${Z.sig&&Z.ini?"Check every page before sending.":"Print it, then sign it and initial both pages by hand, or add your signature above."}${["q1","q2","q3","q4","q6"].some(k=>Z[k]==="Yes")?" You answered “Yes” to a question that asks for details: write them on the form or attach them.":""}`;
+    if(!miss.length)note.style.color="var(--good)";
+  }catch(e){note.innerHTML=`<span style="color:var(--bad)">Couldn’t fill the form. Check your connection and refresh, then try again.</span><br><small>Technical detail: ${esc(String(e&&e.message||e).slice(0,160))}</small>`}
+}
+$("#zOfficial").onclick=()=>fillOfficialZ83(false);
+$("#zOfficialCv").onclick=()=>fillOfficialZ83(true);
 })();
 
 
