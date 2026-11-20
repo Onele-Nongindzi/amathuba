@@ -1203,17 +1203,20 @@ async function readCvFile(file){
   if(txt.length&&printable/txt.length>0.9)return txt;
   throw new Error("type");
 }
-const SPELL={recieve:"receive",recieved:"received",acheive:"achieve",acheived:"achieved",acheivement:"achievement",responsibilty:"responsibility",responsibilites:"responsibilities",responsibilties:"responsibilities",resposible:"responsible",responsable:"responsible",managment:"management",manegement:"management",maintainance:"maintenance",maintenence:"maintenance",excellant:"excellent",comunication:"communication",communcation:"communication",experiance:"experience",expirience:"experience",experince:"experience",knowlege:"knowledge",proffesional:"professional",profesional:"professional",succesful:"successful",successfull:"successful",sucessful:"successful",sucess:"success",adress:"address",enviroment:"environment",goverment:"government",occured:"occurred",seperate:"separate",definately:"definitely",untill:"until",begining:"beginning",beleive:"believe",calender:"calendar",collegue:"colleague",colleage:"colleague",commited:"committed",comittee:"committee",efficent:"efficient",independant:"independent",neccessary:"necessary",necesary:"necessary",oppurtunity:"opportunity",oppertunity:"opportunity",organsation:"organisation",organisaton:"organisation",persue:"pursue",prefered:"preferred",priviledge:"privilege",recomend:"recommend",refered:"referred",relevent:"relevant",sincerly:"sincerely",skils:"skills",teh:"the",wich:"which",writting:"writing",writen:"written",adminstration:"administration",administator:"administrator",accomodate:"accommodate",accross:"across",assisstant:"assistant",assistent:"assistant",attendence:"attendance",buisness:"business",bussiness:"business",certicate:"certificate",certifcate:"certificate",costumer:"customer",costumers:"customers",customar:"customer",dilligent:"diligent",eductaion:"education",educaton:"education",grammer:"grammar",initative:"initiative",inteligent:"intelligent",intrested:"interested",languge:"language",punctural:"punctual",qualifacation:"qualification",qualificaton:"qualification",refrences:"references",referances:"references",schedual:"schedule",secratary:"secretary",suppervisor:"supervisor",superviser:"supervisor",technicion:"technician",tecnical:"technical",truely:"truly",volunter:"volunteer",volenteer:"volunteer",wokring:"working",perfomance:"performance",preformance:"performance",strenght:"strength",strenghts:"strengths",abilty:"ability",accuratly:"accurately",basicly:"basically",carefull:"careful",competant:"competent",conscientous:"conscientious",dissapointed:"disappointed",embarass:"embarrass",familar:"familiar",finaly:"finally",freind:"friend",goverments:"governments",hieght:"height",immediatly:"immediately",leadeship:"leadership",liason:"liaison",occassion:"occasion",posession:"possession",reciept:"receipt",tommorow:"tomorrow",wierd:"weird"};
+const SPELL={campany:"company",comapny:"company",compnay:"company",rigg:"rig",enginnering:"engineering",engeneering:"engineering",machanic:"mechanic",mechinic:"mechanic",recieve:"receive",recieved:"received",acheive:"achieve",acheived:"achieved",acheivement:"achievement",responsibilty:"responsibility",responsibilites:"responsibilities",responsibilties:"responsibilities",resposible:"responsible",responsable:"responsible",managment:"management",manegement:"management",maintainance:"maintenance",maintenence:"maintenance",excellant:"excellent",comunication:"communication",communcation:"communication",experiance:"experience",expirience:"experience",experince:"experience",knowlege:"knowledge",proffesional:"professional",profesional:"professional",succesful:"successful",successfull:"successful",sucessful:"successful",sucess:"success",adress:"address",enviroment:"environment",goverment:"government",occured:"occurred",seperate:"separate",definately:"definitely",untill:"until",begining:"beginning",beleive:"believe",calender:"calendar",collegue:"colleague",colleage:"colleague",commited:"committed",comittee:"committee",efficent:"efficient",independant:"independent",neccessary:"necessary",necesary:"necessary",oppurtunity:"opportunity",oppertunity:"opportunity",organsation:"organisation",organisaton:"organisation",persue:"pursue",prefered:"preferred",priviledge:"privilege",recomend:"recommend",refered:"referred",relevent:"relevant",sincerly:"sincerely",skils:"skills",teh:"the",wich:"which",writting:"writing",writen:"written",adminstration:"administration",administator:"administrator",accomodate:"accommodate",accross:"across",assisstant:"assistant",assistent:"assistant",attendence:"attendance",buisness:"business",bussiness:"business",certicate:"certificate",certifcate:"certificate",costumer:"customer",costumers:"customers",customar:"customer",dilligent:"diligent",eductaion:"education",educaton:"education",grammer:"grammar",initative:"initiative",inteligent:"intelligent",intrested:"interested",languge:"language",punctural:"punctual",qualifacation:"qualification",qualificaton:"qualification",refrences:"references",referances:"references",schedual:"schedule",secratary:"secretary",suppervisor:"supervisor",superviser:"supervisor",technicion:"technician",tecnical:"technical",truely:"truly",volunter:"volunteer",volenteer:"volunteer",wokring:"working",perfomance:"performance",preformance:"performance",strenght:"strength",strenghts:"strengths",abilty:"ability",accuratly:"accurately",basicly:"basically",carefull:"careful",competant:"competent",conscientous:"conscientious",dissapointed:"disappointed",embarass:"embarrass",familar:"familiar",finaly:"finally",freind:"friend",goverments:"governments",hieght:"height",immediatly:"immediately",leadeship:"leadership",liason:"liaison",occassion:"occasion",posession:"possession",reciept:"receipt",tommorow:"tomorrow",wierd:"weird"};
 const PROPER=[["microsoft word","Microsoft Word"],["microsoft excel","Microsoft Excel"],["microsoft office","Microsoft Office"],["ms word","MS Word"],["ms excel","MS Excel"],["ms office","MS Office"],["powerpoint","PowerPoint"],["excel","Excel"],["outlook","Outlook"],["isixhosa","isiXhosa"],["isizulu","isiZulu"],["sesotho","Sesotho"],["setswana","Setswana"],["afrikaans","Afrikaans"],["english","English"],["south africa","South Africa"],["eastern cape","Eastern Cape"],["kwazulu-natal","KwaZulu-Natal"],["national senior certificate","National Senior Certificate"]];
 function polishText(t,log){
   let s=String(t);
   s=s.replace(/\b([A-Za-z]+)\b/g,w=>{const f=SPELL[w.toLowerCase()];if(!f)return w;log.spell.add(`${w} → ${f}`);return w[0]===w[0].toUpperCase()?f[0].toUpperCase()+f.slice(1):f});
   PROPER.forEach(([a,b])=>{s=s.replace(new RegExp("\\b"+a.replace(/[-]/g,"\\-")+"\\b","gi"),m=>{if(m!==b)log.caps.add(b);return b})});
-  s=s.replace(/\s+([,.;:])/g,"$1").replace(/[ \t]{2,}/g," ").replace(/\b([Aa]) (?=[aeioAEIO])/g,(m,a)=>{log.grammar=(log.grammar||0)+1;return a+"n "}).trim();
+  s=s.replace(/\(\s*\)/g,"").replace(/\s+([,.;:])/g,"$1").replace(/[ \t]{2,}/g," ").replace(/\b([Aa]) (?=[aeioAEIO])/g,(m,a)=>{log.grammar=(log.grammar||0)+1;return a+"n "}).trim();
   return s;
 }
+function calmCaps(s,log){const letters=(s.match(/[A-Za-z]/g)||[]).length,caps=(s.match(/[A-Z]/g)||[]).length;
+  if(letters<15||caps/letters<0.7)return s;log.caps.add("text written in CAPITALS");
+  return s.replace(/\b[A-Z][A-Z']{3,}\b/g,w=>w[0]+w.slice(1).toLowerCase())}
 function polishDuty(d,log){
-  let s=polishText(d.replace(/^[\s•●▪◦\-–—*·>]+/,""),log);
+  let s=polishText(calmCaps(d.replace(/^[\s•●▪◦\-–—*·>]+/,""),log),log);
   const before=s;
   s=s.replace(/^(I\s+was\s+|I\s+am\s+|I\s+)/,"").replace(/^(my\s+)?(duties|responsibilities)\s+(include|included|were)d?:?\s*/i,"");
   if(s!==before)log.firstPerson++;
@@ -1225,7 +1228,7 @@ const DATE_RE=new RegExp(`((?:${MON}\\s+)?\\d{4})\\s*(?:-|–|—|to|until)\\s*(
 const HEAD={summary:/^(professional |career |personal )?(summary|profile|objective|about me|career objective)\b/i,
  skills:/^((key|core|technical|computer|soft|personal)\s+)?(skills|competencies|strengths|abilities)\b/i,
  exp:/^((work|employment|professional|working|job)\s+)?(experience|history)\b|^employment\b|^career history\b/i,
- edu:/^(education|qualifications?|academic|educational)\b/i,
+ edu:/^(education|qualifications?|academic|educational|high school|secondary school|schooling|tertiary( education)?)\b/i,
  certs:/^(certificates?|certifications?|courses|training|short courses|achievements|awards)\b/i,
  lang:/^languages?\b/i, refs:/^(references?|referees)\b/i,
  personal:/^(personal (details|information|particulars)|contact( details| information)?|details|additional information|other information|other details)\b/i,
@@ -1233,7 +1236,10 @@ const HEAD={summary:/^(professional |career |personal )?(summary|profile|objecti
 function sectionOf(line){if(/:\s*\S/.test(line))return null;const l=line.replace(/[:\-–_*#]+$/,"").trim();if(l.length>45)return null;for(const k in HEAD)if(HEAD[k].test(l))return k;return null}
 function parseCv(raw){
   const log={spell:new Set(),caps:new Set(),firstPerson:0,notes:[],warn:[]};
-  const lines=raw.replace(/\r/g,"").split("\n").map(x=>x.replace(/\u00a0/g," ").trim());
+  const lines=raw.replace(/\r/g,"").replace(/,?\s*(company|employer)\s*:/gi,(m,w,off,str)=>off>0&&str[off-1]!=="\n"?"\n"+w+":":m)
+    .split("\n").map(x=>x.replace(/\u00a0/g," ").replace(/\s*\b\d+\s*\|\s*P\s*a\s*g\s*e\b\s*/gi," ").replace(/\(\s*\)/g,"").replace(/\s{2,}/g," ").trim())
+    .filter(x=>!/^-?\s*$/.test(x)&&!/^page\s+\d+(\s+of\s+\d+)?$/i.test(x))
+    .reduce((acc,x)=>{const p=acc[acc.length-1];if(p!==undefined&&/\b(19|20)\d{2}\s*[-–—]$/.test(p)&&/^(present|current|now|to date|(?:[a-z]+\s+)?(19|20)\d{2})\b/i.test(x)){acc[acc.length-1]=p+" "+x}else acc.push(x);return acc},[]);
   const out={name:"",phone:"",email:"",location:"",licence:"",languages:"",summary:"",skills:"",certs:"",refs:"",exp:[],edu:[]};
   const email=raw.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);if(email)out.email=email[0].replace(/[.,]$/,"");
   const phone=raw.match(/(\+27|0)[\s-]?\d{2}[\s-]?\d{3}[\s-]?\d{4}/);if(phone)out.phone=phone[0].replace(/\s+/g," ");
@@ -1252,10 +1258,12 @@ function parseCv(raw){
     else if(/date of birth|d\.?o\.?b|\bage\s*:/i.test(l))priv.push("date of birth / age");
     else if(/dependants|children\s*:/i.test(l))priv.push("dependants");
     else if(/health\s*:|disabilit/i.test(l))priv.push("health details");
-    if(/licen[cs]e/i.test(l)){const m=l.replace(/.*licen[cs]e\s*:?\s*/i,"").trim();out.licence=m||"Yes"}
+    if(/licen[cs]e/i.test(l)){let m=l.replace(/.*licen[cs]e\s*:?\s*/i,"").trim();if(/^(code\s*)?(\d{1,2}|eb|ec1?|c1?|b|a1?)$/i.test(m))m="Code "+m.replace(/^code\s*/i,"").toUpperCase();out.licence=m||"Yes"}
     if(/^(languages?)\s*:/i.test(l))out.languages=polishText(l.replace(/^languages?\s*:\s*/i,""),log);
     if(/^(address|location|residential address|home address|town)\s*:/i.test(l)&&!out.location){out.location=l.replace(/^[^:]+:\s*/,"").replace(/,?\s*\d{4}\s*$/,"");const tw=(window.AMATHUBA_TOWNS||[]).find(t=>t[0].toLowerCase()===out.location.trim().toLowerCase());if(tw)out.location=`${tw[0]}, ${tw[1]}`}
   });
+  if(!out.location){const cl=(sec.top||[]).find(l=>/\|/.test(l)&&(/@/.test(l)||/\d{3}\s?\d{3}\s?\d{3,4}/.test(l)));
+    if(cl){const part=cl.split(/\s*\|\s*/).find(p=>p&&!/@/.test(p)&&!/\d{3}/.test(p)&&/^[A-Za-z][A-Za-z ,.'-]{2,40}$/.test(p));if(part)out.location=part.trim()}}
   if(!out.location){const t=(window.AMATHUBA_TOWNS||[]).find(t=>new RegExp("\\b"+t[0]+"\\b","i").test((sec.top||[]).concat(sec.personal||[]).join(" ")));if(t)out.location=`${t[0]}, ${t[1]}`}
   if(priv.length)log.notes.push(`Left out your ${[...new Set(priv)].join(", ")}. Employers don’t need these on a CV, and leaving them out protects your privacy.`);
   // summary
@@ -1266,14 +1274,50 @@ function parseCv(raw){
   const groups=[],seen=new Set();let flat=[];
   const clean=x=>{x=x.replace(/^[\s\-–*·>]+/,"").replace(/[.]$/,"").trim();return x.length>=2&&x.length<=45?polishText(x[0].toUpperCase()+x.slice(1),log):""};
   const uniq=a=>a.filter(x=>{const k=x.toLowerCase();if(!x||seen.has(k))return false;seen.add(k);return true});
+  const SPOKEN=/^(english|afrikaans|isixhosa|xhosa|isizulu|zulu|isindebele|ndebele|sesotho|sotho|sepedi|pedi|northern sotho|setswana|tswana|siswati|swati|tshivenda|venda|xitsonga|tsonga|shona|french|portuguese|swahili|sign language)$/i;
+  const gmap=new Map();let lastKey="";
   (sec.skills||[]).forEach(l=>{l=l.replace(/^[\s•●▪◦\-–—*·>]+/,"");const m=l.match(/^([A-Za-z][A-Za-z &\/\-]{1,28}):\s*(.+)$/);
-    const items=(m?m[2]:l).split(/[,;|•●▪]|\s{2,}/).map(clean);
-    if(m){const u=uniq(items);if(u.length)groups.push(`${m[1].trim()}: ${u.join(", ")}`)}else flat=flat.concat(items)});
+    const raw=(m?m[2]:l).replace(/\s*\/\s*$/,"/").split(/[,;|•●▪]|\s{2,}/);
+    if(m){const key=m[1].trim();lastKey=key;gmap.set(key,(gmap.get(key)||[]).concat(raw))}
+    else if(lastKey&&(/^[a-z]/.test(l)||/[\/,&]\s*$/.test((gmap.get(lastKey)||[""]).slice(-1)[0]+"")))gmap.set(lastKey,gmap.get(lastKey).concat(raw));
+    else{lastKey="";flat=flat.concat(raw.map(clean))}});
+  gmap.forEach((raw,key)=>{
+    const items=[];raw.forEach(x=>{x=x.trim();if(items.length&&/\/$/.test(items[items.length-1]))items[items.length-1]+=x;else items.push(x)});
+    const cl=items.map(clean).filter(Boolean);
+    if(cl.length&&cl.every(x=>SPOKEN.test(x.trim()))){const sp=cl.map(x=>x.replace(/^siswati$/i,"siSwati").replace(/^tsonga$/i,"Xitsonga").replace(/^xhosa$/i,"isiXhosa").replace(/^zulu$/i,"isiZulu"));
+      if(sp.length>(out.languages||"").split(",").filter(Boolean).length)out.languages=sp.join(", ");log.notes.push("Moved the languages you speak from Skills to Languages.");return}
+    const u=uniq(cl);if(u.length)groups.push(`${key}: ${u.join(", ")}`)});
   flat=uniq(flat);
   out.skills=groups.length?groups.concat(flat.length?[`Other: ${flat.join(", ")}`]:[]).join("\n"):flat.join(", ");
   // experience
   const isBullet=l=>/^[•●▪◦\-–—*·>]/.test(l);
-  const E=sec.exp||[];const hasBullets=E.some(isBullet);
+  const E=sec.exp||[];
+  const LABEL=x=>x.replace(/^[•●▪◦\-–—*·>\s]+/,"");
+  const labelled=E.filter(x=>/^(company|employer|organisation|organization)\s*:/i.test(LABEL(x))).length>=2;
+  if(labelled){
+    let cj=null;const jobs=[];
+    const setDates=(s)=>{const m=s.match(DATE_RE);if(m){cj.start=m[1].replace(/\b\w/,c=>c.toUpperCase());cj.end=/present|current|now|date/i.test(m[2])?"Present":m[2].replace(/\b\w/,c=>c.toUpperCase());return s.replace(m[0],"")}
+      const y=s.match(/\(?\b((?:19|20)\d{2})\b\)?/);if(y){cj.start=cj.start||y[1];cj.end=cj.end||y[1];return s.replace(y[0],"")}return s};
+    E.forEach(l0=>{const l=LABEL(l0);let m;
+      if((m=l.match(/^(company|employer|organisation|organization)\s*:\s*(.*)$/i))){cj={title:"",org:"",place:"",start:"",end:"",duties:[]};jobs.push(cj);
+        let rest=setDates(m[2]);const parts=rest.split(/\s*\|\s*/);cj.org=parts[0].replace(/[,;\s]+$/,"").trim();if(parts[1])cj.place=parts.slice(1).join(", ").trim();return}
+      if(!cj)return;
+      if((m=l.match(/^(position|job title|title|role|designation|post)\s*:\s*(.*)$/i))){const t=setDates(m[2]).trim();const sp=t.split(/\s{1,}(?=[A-Z][a-z]+,)/);cj.title=sp[0].replace(/[,;\s]+$/,"");
+        const after=t.slice(cj.title.length).replace(/^[,;\s]+/,"");if(after)cj.duties.push(after);return}
+      if((m=l.match(/^(period|duration|dates?|from)\s*:\s*(.*)$/i))){setDates(m[2]);return}
+      if((m=l.match(/^(location|place|town|city)\s*:\s*(.*)$/i))){cj.place=m[2];return}
+      if(/^reason for leaving\s*:/i.test(l))return;
+      if((m=l.match(/^(duties|responsibilities|key responsibilities|tasks)\s*:?\s*(.*)$/i))){if(m[2])cj.duties.push(m[2]);return}
+      const dm=l.match(DATE_RE);
+      if(dm&&!cj.start&&l.replace(dm[0],"").replace(/[|,\s]/g,"").length<30){const rest=setDates(l).replace(/[|,]/g," ").trim();if(rest&&!cj.place)cj.place=rest;return}
+      const last=cj.duties.length-1;
+      if(last>=0&&(/^[a-z(]/.test(l)||/:$/.test(cj.duties[last])||!/[.!?]$/.test(cj.duties[last]))&&!isBullet(l0)){cj.duties[last]+=" "+l;return}
+      cj.duties.push(l)});
+    jobs.forEach(j=>{out.exp.push({title:polishText(j.title,log),org:polishText(j.org,log),place:polishText(j.place,log),start:j.start,end:j.end,
+      duties:j.duties.map(d=>polishDuty(d.replace(/^(field service)\s*:\s*/i,"Field service: ").replace(/\s*,\s*$/,""),log)).filter(Boolean).join("\n")})});
+    log.notes.push(`Read ${jobs.length} jobs from the “Company:” and “Position:” layout.`);
+  }
+  if(!labelled){const hasBullets=E.some(isBullet);
   let curE=null,pending=[],lastLen=0;const maxLen=Math.max(40,...E.map(x=>x.length));
   const ends=s=>/[.!?:;]$/.test(s.trim());
   E.forEach((l,i)=>{
@@ -1312,9 +1356,25 @@ function parseCv(raw){
   out.exp=out.exp.map(e=>({title:e.title,org:e.org,place:e.place,start:e.start,end:e.end,duties:e.duties.map(d=>polishDuty(d,log)).filter(Boolean).join("\n")}));
   if(!out.exp.length&&E.length){out.exp.push({title:"",org:"",place:"",start:"",end:"",duties:E.map(l=>polishDuty(l,log)).join("\n")});log.warn.push("Couldn’t find dates in your work experience. Check the job title, company and dates in step 1.")}
   out.exp.forEach(e=>{if(!e.title)log.warn.push("One job has no title. Add it in step 1.")});
-  // education
-  const INST=/\b(university|college|school|institute|academy|tvet|technikon|campus|unisa)\b/i;
-  (sec.edu||[]).forEach(l=>{
+  }
+  // education (also picks up "Institution:" lines that ended up under certificates)
+  const INST=/\b(university|college|school|institute|academy|tvet|technikon|campus|unisa|training cent(er|re)|centre|center)\b/i;
+  const eduLines=(sec.edu||[]).slice();
+  sec.certs=(sec.certs||[]).filter(l=>{const c=l.replace(/^[•●▪◦\-–—*·>]\s*/,"");if(/^(institution|school|college|subjects?)\s*:/i.test(c)||/^(high school|secondary school)$/i.test(c)){eduLines.push(l);return false}return true});
+  if(eduLines.some(l=>/^[•●▪◦\-–—*·>\s]*(institution|school|college)\s*:/i.test(l))){
+    let hint="";let ce=null;
+    eduLines.forEach(l0=>{const l=l0.replace(/^[•●▪◦\-–—*·>]\s*/,"");let m;
+      if(/^(high school|secondary school|matric)$/i.test(l)){hint="high";return}
+      if((m=l.match(/^(institution|school|college|university)\s*:\s*(.*)$/i))){const yrs=(m[2].match(/\b(19|20)\d{2}\b/g)||[]);
+        const inst=m[2].replace(/\(.*?\)/g,"").replace(/\b(19|20)\d{2}\b/g,"").replace(/[&,\s]+$/,"").trim();
+        const name=inst.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()).replace(/\bTvet\b/,"TVET");
+        ce={qual:hint==="high"||/high school|secondary/i.test(inst)?"High school (write your exact qualification, e.g. National Senior Certificate)":"",inst:name,year:yrs.length?yrs[yrs.length-1]:""};out.edu.push(ce);hint="";return}
+      if(ce&&(m=l.match(/^(qualification|course|certificate|diploma|programme|program|trade)\s*:\s*(.*)$/i))){ce.qual=polishText(m[2],log);return}
+      if(/^subjects?\s*:/i.test(l)){log.notes.push("Left out your school subjects. Your qualification is enough on a CV.");return}
+      if(ce&&!ce.qual&&l.length<80)ce.qual=polishText(l,log)});
+    out.edu.forEach(e=>{if(!e.qual)log.warn.push(`Add the name of the qualification or course you did at ${e.inst}.`)});
+  } else
+  eduLines.forEach(l=>{
     const clean=l.replace(/^[•●▪◦\-–—*·>]\s*/,"");
     const yr=(clean.match(/\b(19|20)\d{2}\b(?!.*\b(19|20)\d{2}\b)/)||[""])[0];
     let rest=clean.replace(DATE_RE,"").replace(new RegExp("(\\b"+MON+"\\s+)?\\b"+(yr||"9999")+"\\b","i"),"").replace(/\s*(year obtained|completed|obtained)\s*:?/i,"").replace(/[|,(\[\]\-–\s]+$/,"").replace(/^[|,\s]+/,"").trim();
@@ -1333,8 +1393,21 @@ function parseCv(raw){
   out.certs=(sec.certs||[]).map(l=>polishText(l.replace(/^[•●▪◦\-–—*·>]\s*/,""),log)).join("\n");
   (sec.personal||[]).concat(sec.top||[]).forEach(l=>{const c=l.replace(/^[•●▪◦\-–—*·>]\s*/,"");if(/^languages?\s*:/i.test(c)&&!out.languages)out.languages=polishText(c.replace(/^languages?\s*:\s*/i,""),log)});
   if(!out.languages&&sec.lang)out.languages=polishText(sec.lang.join(", ").replace(/[•●▪]/g,""),log);
-  const refs=(sec.refs||[]).filter(l=>!/available\s+(on|upon)\s+request/i.test(l));
-  out.refs=refs.length?refs.join("\n"):"Available on request";
+  const refLines=(sec.refs||[]).filter(l=>!/available\s+(on|upon)\s+request/i.test(l)).map(l=>l.replace(/^[•●▪◦\-–—*·>]\s*/,""));
+  out.refList=[];
+  if(refLines.filter(l=>/^(contact person|name|referee|company|position|contact number|tel|phone|cell)\s*:/i.test(l)).length>=3){
+    let r=null;const push=()=>{if(r&&(r.n||r.c))out.refList.push(r)};
+    refLines.forEach(l=>{const m=l.match(/^([a-z .]+?)\s*:\s*(.*)$/i);if(!m)return;const k=m[1].toLowerCase().trim(),v=m[2].trim();
+      if(/^(contact person|name|referee)$/.test(k)){push();r={n:v,c:"",p:"",t:""}}
+      else if(/^company|organisation|organization$/.test(k)){if(!r||r.c){push();r={n:"",c:"",p:"",t:""}}r.c=v}
+      else if(/^(position|title|relationship)$/.test(k)){r=r||{n:"",c:"",p:"",t:""};r.p=v.replace(/^lecture$/i,"Lecturer")}
+      else if(/(number|tel|phone|cell)/.test(k)){r=r||{n:"",c:"",p:"",t:""};r.t=v}});
+    push();
+    const keep=out.refList.filter(x=>x.t).slice(0,3);const total=out.refList.length;out.refList=keep;
+    out.refs=keep.map(x=>[x.n&&x.n!==x.c?x.n:"",x.p,x.c,x.t].filter(Boolean).join(", ")).join("\n");
+    if(total>keep.length)log.notes.push(`Kept ${keep.length} references with phone numbers (out of ${total}). Employers usually need two or three.`);
+  } else out.refs=refLines.length?refLines.join("\n"):"Available on request";
+  if(!out.refs)out.refs="Available on request";
   if(sec.drop&&sec.drop.length)log.notes.push("Left out hobbies or a declaration. They take space that’s better used for skills and experience.");
   // checks
   if(!out.name)log.warn.push("Couldn’t find your name. Add it in step 1.");
@@ -1414,6 +1487,7 @@ function applyImport(res){
   ["name","phone","email","location","licence","languages","summary","skills","certs","refs"].forEach(k=>S[k]=o[k]||"");
   S.exp=o.exp.length?o.exp:[{title:"",org:"",place:"",start:"",end:"",duties:""}];
   S.edu=o.edu.length?o.edu:[{qual:"",inst:"",year:""}];
+  try{if(o.refList&&o.refList.length&&!(Z.refList||[]).some(r=>r&&r.n)){Z.refList=o.refList.map(r=>({n:r.n||r.c,r:[r.p,r.c].filter(Boolean).join(", "),t:r.t}));saveZ()}}catch(e){}
   if(o.level&&S.level===""){S.level=o.level;res.log.notes.push(`Set your highest education to ${LEVELS[+o.level]}. Change it if that’s wrong.`)}
   save();document.querySelectorAll("[data-k]").forEach(el=>el.value=S[el.dataset.k]||"");drawLists();fillQual();
   pendingImport=null;showReport(res,false);markFlags(res.flags);toast(res.flags&&res.flags.length?"CV polished. Check the fields marked in red.":"CV polished. Check your details.");
