@@ -51,3 +51,11 @@ Only post opportunities you have verified. Never post anything that asks applica
 ## Official Z83
 
 `forms/z83-blank.pdf` is the official Z83 (effective 01 January 2021). The Z83 helper writes the user's answers onto it on the device and can join the CV after it as one PDF. If DPSA publishes a new version of the form, the positions in `fillOfficialZ83()` in `index.html` must be checked again.
+
+## Visitor counts (only you can see them)
+
+1. Sign up at https://www.goatcounter.com and choose a code, for example `amathubacareers`.
+2. Put that code in `js/config.js` (`goatcounterCode: "amathubacareers"`), then commit and push.
+3. See your numbers at `https://<your-code>.goatcounter.com` after signing in.
+
+It counts visits and actions such as CVs downloaded, Z83s filled and scam checks, never names or CV content. Nothing is counted when you test on your own computer (localhost).

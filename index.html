@@ -565,12 +565,13 @@ a.trackbtn{text-decoration:none;display:inline-block}
 </section>
 <footer style="border-top:1px solid var(--line);margin-top:30px;padding-top:16px;color:var(--soft);font-size:.88rem">
   <p style="margin:0 0 4px">Amathuba Careers was created by Onele Nongindzi.</p>
-  <p style="margin:0 0 4px">Your information is saved only on this device. It is never sent to anyone.</p>
+  <p style="margin:0 0 4px">Your CV and personal details are saved only on this device and are never sent to anyone. We count visits anonymously, without cookies.</p>
   <p style="margin:0">© 2026 Onele Nongindzi. All rights reserved.</p>
 </footer>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<script src="js/config.js"></script>
 <script src="js/opportunities.js"></script>
 <script src="js/towns.js"></script>
 <script>
@@ -1825,6 +1826,21 @@ $("#posterBtn").onclick=async()=>{
     if(dark)root.setAttribute("data-theme","dark");else root.removeAttribute("data-theme");
     try{localStorage.setItem("amathuba-theme",dark?"dark":"light")}catch(e){}paint();};
   paint();
+})();
+
+/* Anonymous visit and action counts (GoatCounter). Only counts that something happened, never personal details. */
+(function(){
+  const code=((window.AMATHUBA_CONFIG||{}).goatcounterCode||"").trim();
+  if(!code||/^(localhost|127\.|192\.168\.|10\.)/.test(location.hostname)||location.protocol==="file:")return;
+  const s=document.createElement("script");s.async=true;s.src="https://gc.zgo.at/count.js";
+  s.setAttribute("data-goatcounter",`https://${code}.goatcounter.com/count`);document.head.appendChild(s);
+  const count=name=>{try{if(window.goatcounter&&window.goatcounter.count)window.goatcounter.count({path:name,title:name,event:true})}catch(e){}};
+  const IDS={dlPdf:"cv-downloaded",sendCv:"cv-sent",pasteGo:"cv-pasted",clGen:"cover-letter-written",zOfficial:"z83-filled",zOfficialCv:"z83-and-cv-filled",
+    zPdf:"z83-answer-sheet",scamGo:"scam-check",posterBtn:"poster-downloaded",shareApp:"shared-app",shareMore:"shared-app",trSave:"application-saved",impYes:"cv-replaced"};
+  document.addEventListener("click",e=>{const el=e.target.closest("button,a");if(!el)return;
+    if(IDS[el.id])count(IDS[el.id]);else if(el.classList.contains("wa-mini"))count("shared-opportunity");
+    else if(el.dataset&&el.dataset.tab)count("opened-"+el.dataset.tab);else if(el.dataset&&el.dataset.cal!==undefined)count("reminder-added")},true);
+  const f=document.getElementById("cvFile");if(f)f.addEventListener("change",()=>count("cv-uploaded"));
 })();
 if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{})})}
 </script>
