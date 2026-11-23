@@ -1,4 +1,4 @@
-# Amathuba Careers: CV Builder & Opportunities
+# Amathuba: CV Builder & Opportunities
 
 A free CV builder and opportunity finder by Onele Foundation. No sign-up, no subscription, works on phones and offline after the first visit. All personal information stays on the user's own device (nothing is sent to a server), which keeps the project simple under POPIA.
 

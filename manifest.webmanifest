@@ -1,7 +1,7 @@
 {
-  "name": "Amathuba Careers: CV Builder & Opportunities",
+  "name": "Amathuba: Opportunity Starts Here",
   "short_name": "Amathuba",
-  "description": "Free CV builder and opportunity finder by Onele Foundation.",
+  "description": "Free CV builder, job finder and application tools for South African job seekers.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

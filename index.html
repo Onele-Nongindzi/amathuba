@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Free CV builder and opportunity finder for job seekers across South Africa.">
+<meta name="description" content="Amathuba: Opportunity Starts Here. Free CV builder, job finder and application tools for South African job seekers, from first job to next career move.">
 <meta name="theme-color" content="#5b2a86">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <script>try{if(localStorage.getItem("amathuba-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
-<title>Amathuba Careers: CV Builder & Opportunities</title>
+<title>Amathuba: Opportunity Starts Here</title>
 <style>
 :root{
   --paper:#ffffff; --ground:#ffffff; --ink:#211a28; --soft:#5c5266; --line:#e0d8e7;
@@ -191,6 +191,9 @@ input.flagged,textarea.flagged{border-color:var(--bad);box-shadow:0 0 0 2px rgba
 a.trackbtn{text-decoration:none;display:inline-block}
 .wa-mini{border-color:#1f7a46!important;color:#1f7a46!important}
 :root[data-theme="dark"] .wa-mini{border-color:#6fd39b!important;color:#6fd39b!important}
+.about{margin-top:28px;border:1px solid var(--line);border-radius:14px;padding:4px 16px;background:var(--paper)}
+.about summary{cursor:pointer;font-weight:700;padding:10px 0;color:var(--brand)}
+.about p{margin:0 0 10px;font-size:.95rem}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);
   padding:10px 16px;border-radius:10px;font-size:.92rem;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
 .toast.show{opacity:1}
@@ -202,11 +205,11 @@ a.trackbtn{text-decoration:none;display:inline-block}
 <div class="wrap">
 <header>
   <div class="topbar">
-  <p class="brand" style="margin:0">Amathuba Careers</p>
+  <p class="brand" style="margin:0">Amathuba</p>
   <button class="theme-btn" type="button" id="themeBtn" aria-pressed="false"></button>
   </div>
-  <h1>Build a CV that gets read, then find where to apply.</h1>
-  <p class="lede">Free to use, no sign-up and no subscription. Your details stay on this device only.</p>
+  <h1>Opportunity Starts Here.</h1>
+  <p class="lede">Build a CV that gets read, find jobs and learnerships that suit you, and apply with confidence. Whether it’s your first job or your next move. Free, with no sign-up.</p>
 </header>
 
 <nav role="tablist" aria-label="Steps">
@@ -226,7 +229,7 @@ a.trackbtn{text-decoration:none;display:inline-block}
 
   <div class="opp" id="importBox">
     <h4>Already have a CV?</h4>
-    <p>Upload it and Amathuba Careers will read it, fix common spelling mistakes, sort it into ATS-friendly headings and fill in this form for you to check.</p>
+    <p>Upload it and Amathuba will read it, fix common spelling mistakes, sort it into ATS-friendly headings and fill in this form for you to check.</p>
     <div class="app-actions">
       <button class="btn small" type="button" id="cvPick">Upload my CV</button>
       <input type="file" id="cvFile" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,application/octet-stream" hidden>
@@ -417,7 +420,7 @@ a.trackbtn{text-decoration:none;display:inline-block}
   <div id="trList"></div>
 
   <h3 style="margin-top:24px">Documents ready</h3>
-  <p class="hint">Tick what you have, so you’re ready when an employer asks. Amathuba Careers doesn’t store the documents, only your ticks and dates.</p>
+  <p class="hint">Tick what you have, so you’re ready when an employer asks. Amathuba doesn’t store the documents, only your ticks and dates.</p>
   <div id="docList"></div>
   <p class="hint" id="docTip"></p>
 </section>
@@ -508,7 +511,7 @@ a.trackbtn{text-decoration:none;display:inline-block}
   </fieldset>
 
   <div class="opp"><h4>Fill the official Z83</h4>
-    <p>Amathuba Careers writes your answers onto the official Z83 (effective 01 January 2021), ready to email or print. Read every page before you send it.</p>
+    <p>Amathuba writes your answers onto the official Z83 (effective 01 January 2021), ready to email or print. Read every page before you send it.</p>
     <div class="btns" style="margin-bottom:0"><button class="btn" type="button" id="zOfficial">Download filled Z83</button><button class="btn ghost" type="button" id="zOfficialCv">Z83 + CV as one PDF</button></div>
     <p class="hint" id="zOffNote" style="margin:8px 0 0"></p>
   </div>
@@ -545,7 +548,7 @@ a.trackbtn{text-decoration:none;display:inline-block}
 <!-- STEP 7 -->
 <section id="scam" role="tabpanel" hidden>
   <h2>Scam checker</h2>
-  <p class="hint">Got a job offer by WhatsApp, SMS, email or Facebook? Paste it here and Amathuba Careers will look for the warning signs of a job scam. Nothing you paste leaves this phone.</p>
+  <p class="hint">Got a job offer by WhatsApp, SMS, email or Facebook? Paste it here and Amathuba will look for the warning signs of a job scam. Nothing you paste leaves this phone.</p>
   <label for="scamText">Paste the job advert or message</label>
   <textarea id="scamText" style="min-height:160px" placeholder="Paste the full message, including any email address, phone number or link"></textarea>
   <p class="err" id="scamErr" role="alert"></p>
@@ -554,9 +557,18 @@ a.trackbtn{text-decoration:none;display:inline-block}
   <div class="opp" style="margin-top:16px"><h4>Rules that keep you safe</h4>
     <p style="margin:0">Real employers and government never ask you to pay for a job, training, uniforms or “admin”. Never send your ID, bank details, PIN or a one-time PIN (OTP) before you have checked the job is real. Look the company up yourself and call its official number, not the number in the message. Government jobs are advertised on gov.za websites and in the Public Service Vacancy Circular.</p></div>
 </section>
+<section class="about" aria-labelledby="aboutH">
+  <details>
+    <summary id="aboutH">About Amathuba</summary>
+    <p><strong>Amathuba</strong> means “opportunities” in isiXhosa and isiZulu. It was inspired by unemployed young people in Lusikisiki, and it’s for every South African looking for work.</p>
+    <p><strong>Our mission:</strong> to empower unemployed South Africans through accessible career resources, tools and opportunities.</p>
+    <p><strong>Our vision:</strong> employment support that everyone can reach, whatever their financial circumstances.</p>
+    <p><strong>Our promise:</strong> essential job-seeker services stay free. Amathuba serves the person looking for their very first opportunity as fully as the professional ready for their next career move.</p>
+  </details>
+</section>
 <section class="spread" aria-labelledby="spreadH">
   <h3 id="spreadH">Know someone looking for work?</h3>
-  <p class="hint">Share Amathuba Careers. It’s free and works on any smartphone.</p>
+  <p class="hint">Share Amathuba. It’s free and works on any smartphone.</p>
   <div class="btns" style="margin:0">
     <a class="btn wa" id="shareApp" href="#" target="_blank" rel="noopener noreferrer">Share on WhatsApp</a>
     <button class="btn ghost" type="button" id="shareMore" hidden>More ways to share</button>
@@ -564,7 +576,7 @@ a.trackbtn{text-decoration:none;display:inline-block}
   </div>
 </section>
 <footer style="border-top:1px solid var(--line);margin-top:30px;padding-top:16px;color:var(--soft);font-size:.88rem">
-  <p style="margin:0 0 4px">Amathuba Careers was created by Onele Nongindzi.</p>
+  <p style="margin:0 0 4px">Amathuba was created by Onele Nongindzi.</p>
   <p style="margin:0 0 4px">Your CV and personal details are saved only on this device and are never sent to anyone. We count visits anonymously, without cookies.</p>
   <p style="margin:0">© 2026 Onele Nongindzi. All rights reserved.</p>
 </footer>
@@ -1590,7 +1602,7 @@ function icsFor(title,dateStr,desc,alarms){
   const d=toD(dateStr),n=new Date(d);n.setDate(n.getDate()+1);
   const stamp=new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d+Z$/,"Z");
   const escI=s=>String(s||"").replace(/\\/g,"\\\\").replace(/[,;]/g,m=>"\\"+m).replace(/\n/g,"\\n");
-  return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Onele Foundation//Amathuba Careers//EN","CALSCALE:GREGORIAN","BEGIN:VEVENT",
+  return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Onele Foundation//Amathuba//EN","CALSCALE:GREGORIAN","BEGIN:VEVENT",
     `UID:${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}@amathuba`,`DTSTAMP:${stamp}`,
     `DTSTART;VALUE=DATE:${ymd(d)}`,`DTEND;VALUE=DATE:${ymd(n)}`,`SUMMARY:${escI(title)}`,`DESCRIPTION:${escI(desc)}`,
     ...alarms.flatMap(t=>["BEGIN:VALARM","ACTION:DISPLAY",`DESCRIPTION:${escI(title)}`,`TRIGGER:${t}`,"END:VALARM"]),
@@ -1600,7 +1612,7 @@ function gcal(title,dateStr,desc){const d=toD(dateStr),n=new Date(d);n.setDate(n
 function calMenu(a,btn){
   const card=btn.closest(".app");const old=card.querySelector(".calbox");if(old){old.remove();return}
   const name=[a.job,a.org].filter(Boolean).join(" at ")||"Job application";
-  const desc=[a.ref?"Reference: "+a.ref:"",a.link||"","Added by Amathuba Careers"].filter(Boolean).join("\n");
+  const desc=[a.ref?"Reference: "+a.ref:"",a.link||"","Added by Amathuba"].filter(Boolean).join("\n");
   const items=[];
   if(a.close&&days(a.close)>=0)items.push({k:"close",t:`Closing date: ${name}`,d:a.close,al:["-P2D","-PT12H"],label:`Closing date (${fmt(a.close)})`});
   if(a.interview&&days(a.interview)>=0)items.push({k:"iv",t:`Interview: ${name}`,d:a.interview,al:["-P1D","-PT14H"],label:`Interview (${fmt(a.interview)})`});
@@ -1779,10 +1791,10 @@ $("#zOfficialCv").onclick=()=>fillOfficialZ83(true);
 
 /* Sharing on WhatsApp, the phone's share menu, and the QR poster */
 const APP_URL=location.origin+location.pathname.replace(/index\.html$/,"");
-function waLink(text){return "https://wa.me/?text="+encodeURIComponent(text+"\n\nFound on Amathuba Careers, a free CV builder and job finder: "+APP_URL)}
-const APP_MSG="Looking for work? Amathuba Careers is a free app to build a CV that gets read, find jobs and learnerships near you, fill in the Z83 for government jobs and spot job scams. No sign-up and no data costs after the first visit: "+APP_URL;
+function waLink(text){return "https://wa.me/?text="+encodeURIComponent(text+"\n\nFound on Amathuba, free help for job seekers: "+APP_URL)}
+const APP_MSG="Looking for work? Amathuba is a free app to build a CV that gets read, find jobs and learnerships near you, fill in the Z83 for government jobs and spot job scams. No sign-up and no data costs after the first visit: "+APP_URL;
 $("#shareApp").href="https://wa.me/?text="+encodeURIComponent(APP_MSG);
-if(navigator.share){$("#shareMore").hidden=false;$("#shareMore").onclick=()=>navigator.share({title:"Amathuba Careers",text:APP_MSG.replace(": "+APP_URL,"."),url:APP_URL}).catch(()=>{})}
+if(navigator.share){$("#shareMore").hidden=false;$("#shareMore").onclick=()=>navigator.share({title:"Amathuba",text:APP_MSG.replace(": "+APP_URL,"."),url:APP_URL}).catch(()=>{})}
 // send the CV PDF through the share menu, where the phone supports sharing files
 (async()=>{try{const test=new File(["x"],"t.pdf",{type:"application/pdf"});if(navigator.canShare&&navigator.canShare({files:[test]})){$("#sendCv").hidden=false;$("#sendCvHint").hidden=false}}catch(e){}})();
 $("#sendCv").onclick=async()=>{const out=await buildCvPdf();if(!out)return;
@@ -1798,7 +1810,7 @@ $("#posterBtn").onclick=async()=>{
   doc.setFillColor(122,69,168);doc.ellipse(W/2,79,125,14,"F");
   doc.setFillColor(58,22,88);doc.ellipse(W/2,84,130,12,"F");
   doc.setFillColor(255,255,255);doc.rect(0,72,W,30,"F");
-  doc.setTextColor(232,192,77);doc.setFont("helvetica","bold");doc.setFontSize(16);doc.text("Amathuba Careers",20,22);
+  doc.setTextColor(232,192,77);doc.setFont("helvetica","bold");doc.setFontSize(16);doc.text("Amathuba: Opportunity Starts Here.",20,22);
   doc.setTextColor(255,255,255);doc.setFontSize(30);doc.text("Looking for work?",20,38);doc.setFontSize(17);doc.setFont("helvetica","normal");doc.text("Build a CV that gets read, then find where to apply.",20,49);
   doc.setTextColor(33,26,40);doc.setFont("helvetica","bold");doc.setFontSize(15);doc.text("Free on your phone:",20,84);
   doc.setFont("helvetica","normal");doc.setFontSize(13);

@@ -1,5 +1,5 @@
 /*
-  Amathuba Careers data file. Edit this file to add, remove or update opportunities.
+  Amathuba data file. Edit this file to add, remove or update opportunities.
   Copyright (c) 2026 Onele Nongindzi. All rights reserved.
 
   EDUCATION LEVELS: 0 Below Grade 9, 1 Grade 9-11, 2 Matric, 3 Certificate/N-cert/NC(V), 4 Diploma, 5 Degree, 6 Honours or higher
