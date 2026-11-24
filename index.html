@@ -191,6 +191,9 @@ input.flagged,textarea.flagged{border-color:var(--bad);box-shadow:0 0 0 2px rgba
 a.trackbtn{text-decoration:none;display:inline-block}
 .wa-mini{border-color:#1f7a46!important;color:#1f7a46!important}
 :root[data-theme="dark"] .wa-mini{border-color:#6fd39b!important;color:#6fd39b!important}
+.firstjob{background:var(--brand-pale);border-radius:10px;padding:10px 12px;margin:0 0 14px;font-size:.93rem}
+.helpful{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0;padding:10px 12px;border-radius:10px;background:var(--brand-pale);font-size:.93rem}
+.helpful[hidden]{display:none}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);
   padding:10px 16px;border-radius:10px;font-size:.92rem;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
 .toast.show{opacity:1}
@@ -286,6 +289,10 @@ a.trackbtn{text-decoration:none;display:inline-block}
   </fieldset>
 
   <fieldset><legend>Work and volunteer experience</legend>
+    <div class="firstjob">
+      <p style="margin:0 0 6px"><strong>No work experience yet? That’s okay.</strong> Volunteering, school, church, caring for family, sport and small businesses all show employers what you can do. Choose one to add an example, then change the parts in [brackets] to your own story.</p>
+      <div class="chips" id="firstJobChips" role="group" aria-label="Add other experience"></div>
+    </div>
     <div id="expList"></div>
     <button class="btn ghost small" type="button" id="addExp">Add experience</button>
   </fieldset>
@@ -330,6 +337,7 @@ a.trackbtn{text-decoration:none;display:inline-block}
     <button class="btn ghost" type="button" id="copyTxt">Copy text</button>
     <button class="btn ghost" type="button" id="sendCv" hidden>Send my CV</button>
   </div>
+  <div class="helpful" data-helpful="cv" hidden><span>Did Amathuba help you today?</span><button class="btn small" type="button" data-help="yes">Yes</button><button class="btn ghost small" type="button" data-help="no">Not really</button></div>
   <p class="hint" id="sendCvHint" hidden style="margin-top:-4px">“Send my CV” opens your phone’s share menu, so you can send the PDF by WhatsApp or email.</p>
   
   <div class="paper" id="preview" aria-label="CV preview"></div>
@@ -511,6 +519,7 @@ a.trackbtn{text-decoration:none;display:inline-block}
     <p>Amathuba writes your answers onto the official Z83 (effective 01 January 2021), ready to email or print. Read every page before you send it.</p>
     <div class="btns" style="margin-bottom:0"><button class="btn" type="button" id="zOfficial">Download filled Z83</button><button class="btn ghost" type="button" id="zOfficialCv">Z83 + CV as one PDF</button></div>
     <p class="hint" id="zOffNote" style="margin:8px 0 0"></p>
+    <div class="helpful" data-helpful="z83" hidden><span>Did Amathuba help you today?</span><button class="btn small" type="button" data-help="yes">Yes</button><button class="btn ghost small" type="button" data-help="no">Not really</button></div>
   </div>
 
   <h3>Before you send it</h3>
@@ -566,6 +575,7 @@ a.trackbtn{text-decoration:none;display:inline-block}
 <footer style="border-top:1px solid var(--line);margin-top:30px;padding-top:16px;color:var(--soft);font-size:.88rem">
   <p style="margin:0 0 4px">Amathuba was created by Onele Nongindzi.</p>
   <p style="margin:0 0 4px">Your CV and personal details are saved only on this device and are never sent to anyone.</p>
+  <p style="margin:0 0 4px"><button type="button" id="wipeAll" style="font:inherit;font-size:.88rem;background:none;border:0;padding:0;color:var(--bad);text-decoration:underline;cursor:pointer">Clear all my data from this phone</button></p>
   <p style="margin:0">© 2026 Onele Nongindzi. All rights reserved.</p>
 </footer>
 </div>
@@ -710,6 +720,7 @@ function checks(){
     [S.exp.filter(e=>e.title||e.org).every(e=>e.start),"Every experience has dates"],
     [duties.length>0&&duties.filter(d=>ACTION.test(d)).length>=Math.ceil(duties.length/2),"Most duties start with action words (served, helped, managed…)"],
     [S.edu.some(e=>e.qual),"Education is filled in"],
+    [!/\[[^\]]*\]/.test(asText()),/\[[^\]]*\]/.test(asText())?"Replace the [example] parts with your own details":"No example text left in your CV"],
   ];
   return L;
 }
@@ -870,7 +881,7 @@ $("#trSave").onclick=()=>{
   const v=k=>$("#tr"+k).value.trim();
   if(!v("Job")&&!v("Org")){$("#trErr").textContent="Enter the job title or the company first.";return}
   const rec={job:v("Job"),org:v("Org"),where:v("Where"),status:v("Status"),applied:v("Applied"),close:v("Close"),interview:v("Interview"),link:v("Link"),ref:v("Ref"),notes:v("Notes")};
-  if(editing){Object.assign(APPS.find(x=>x.id===editing),rec);toast("Application updated.")}
+  if(editing){const prev=APPS.find(x=>x.id===editing);if(prev.status!==rec.status)countOutcome(rec.status);Object.assign(prev,rec);toast("Application updated.")}
   else{APPS.unshift(Object.assign({id:Date.now().toString(36)},rec));toast("Application added.")}
   saveApps();$("#trForm").hidden=true;renderTrack();
 };
@@ -897,14 +908,14 @@ function renderTrack(){
     <div class="app-actions">
       <label class="sr-only" for="s-${a.id}">Status</label>
       <select id="s-${a.id}" data-status="${a.id}">${["Applied","Interview","Offer","Not successful","Withdrew"].map(s=>`<option${s===a.status?" selected":""}>${s}</option>`).join("")}</select>
-      ${a.link?`<a href="${esc(a.link)}" target="_blank" rel="noopener noreferrer" style="color:var(--brand);font-weight:600;font-size:.9rem">Open advert</a>`:""}
+      ${a.link&&/^https?:\/\//i.test(a.link)?`<a href="${esc(a.link)}" target="_blank" rel="noopener noreferrer" style="color:var(--brand);font-weight:600;font-size:.9rem">Open advert</a>`:""}
       ${a.status==="Interview"?`<button class="btn small" type="button" data-practise="1">Practise for it</button>`:""}
       ${OPEN.includes(a.status)?`<button class="btn ghost small" type="button" data-letter="${a.id}">Cover letter</button>`:""}
       ${OPEN.includes(a.status)&&((a.close&&days(a.close)>=0)||(a.interview&&days(a.interview)>=0))?`<button class="btn ghost small" type="button" data-cal="${a.id}">Remind me</button>`:""}
       <button class="btn ghost small" type="button" data-edit="${a.id}">Edit</button>
       <button class="btn danger small" type="button" data-del="${a.id}">Remove</button>
     </div></div>`).join("");
-  document.querySelectorAll("[data-status]").forEach(s=>s.onchange=()=>{const a=APPS.find(x=>x.id===s.dataset.status);a.status=s.value;if(s.value==="Interview"&&!a.interview){openForm(a.id);toast("Add the interview date.")}saveApps();renderTrack()});
+  document.querySelectorAll("[data-status]").forEach(s=>s.onchange=()=>{const a=APPS.find(x=>x.id===s.dataset.status);if(s.value!==a.status)countOutcome(s.value);a.status=s.value;if(s.value==="Interview"&&!a.interview){openForm(a.id);toast("Add the interview date.")}saveApps();renderTrack()});
   document.querySelectorAll("[data-practise]").forEach(b=>b.onclick=()=>show("iv"));
   document.querySelectorAll("[data-cal]").forEach(b=>b.onclick=()=>{const a=APPS.find(x=>x.id===b.dataset.cal);if(a)calMenu(a,b)});
   document.querySelectorAll("[data-letter]").forEach(b=>b.onclick=()=>{const a=APPS.find(x=>x.id===b.dataset.letter);if(a)letterFor(a)});
@@ -1811,6 +1822,41 @@ $("#posterBtn").onclick=async()=>{
   doc.setFillColor(91,42,134);doc.rect(0,284,W,13,"F");doc.setTextColor(255,255,255);doc.setFontSize(10);doc.text("Real jobs never ask you to pay. Check any offer with the free scam checker.",W/2,292,{align:"center"});
   saveFile("Amathuba_Careers_poster.pdf",doc.output("arraybuffer"));
 };
+
+/* First-job experience: examples for people with no formal work experience */
+const FIRSTJOB=[
+ {k:"Volunteering",title:"Volunteer",org:"[Organisation]",duties:"Helped [who] with [what] every [week/month]\nWorked with a team of [number] volunteers\n[One thing you achieved, e.g. collected 200 food parcels]"},
+ {k:"School leadership or project",title:"[Class representative / Project leader]",org:"[School name]",duties:"Represented [number] learners at meetings with teachers\nOrganised [an event or project] for [who]\nBalanced schoolwork with [responsibility]"},
+ {k:"Church or community",title:"[Youth leader / Member]",org:"[Church or organisation]",duties:"Led [activity] for [number] young people\nPlanned and organised [events]\nKept records of [attendance / money / stock]"},
+ {k:"Caring for family",title:"Family caregiver",org:"Home",duties:"Cared for [family member] every day, including [tasks]\nManaged the household budget and shopping\nTook [family member] to clinic appointments and kept track of medication"},
+ {k:"Small business or piece jobs",title:"Self-employed: [what you sold or did]",org:"Own business",duties:"Sold [products or services] to about [number] customers a week\nHandled cash and kept simple records\nBought stock and set prices"},
+ {k:"Sport or team",title:"[Captain / Team member]",org:"[Club or school team]",duties:"Trained [number] times a week with the team\n[Led / supported] [number] players\n[Achievement, e.g. reached the district finals]"},
+];
+$("#firstJobChips").innerHTML=FIRSTJOB.map((f,i)=>`<button type="button" data-fj="${i}">${esc(f.k)}</button>`).join("");
+document.querySelectorAll("[data-fj]").forEach(b=>b.onclick=()=>{
+  const f=FIRSTJOB[+b.dataset.fj];const e={title:f.title,org:f.org,place:"",start:"",end:"",duties:f.duties};
+  const empty=S.exp.findIndex(x=>!x.title&&!x.org&&!x.duties);if(empty>=0)S.exp[empty]=e;else S.exp.push(e);
+  save();drawLists();toast("Example added. Change the parts in [brackets] to your own story.");
+  const items=document.querySelectorAll("#expList .item");const last=items[empty>=0?empty:items.length-1];if(last)last.scrollIntoView({behavior:"smooth",block:"center"});
+});
+
+/* Results and feedback, counted anonymously (only if visitor counting is switched on) */
+function countOutcome(status){const c=window.amathubaCount;if(!c)return;if(status==="Interview")c("got-interview");else if(status==="Offer")c("got-offer")}
+const askedHelp=(()=>{try{return sessionStorage.getItem("amathuba-asked")==="1"}catch(e){return false}})();
+function askHelpful(where){if(askedHelp)return;const el=document.querySelector(`[data-helpful="${where}"]`);if(el)el.hidden=false}
+document.querySelectorAll("[data-help]").forEach(b=>b.onclick=()=>{const box=b.closest(".helpful");const yes=b.dataset.help==="yes";
+  if(window.amathubaCount)window.amathubaCount(yes?"helpful-yes":"helpful-no");
+  box.innerHTML=yes?"<span>Thank you! Good luck with your applications.</span>":"<span>Thank you for telling us. We’re working to make Amathuba better.</span>";
+  try{sessionStorage.setItem("amathuba-asked","1")}catch(e){}});
+["dlPdf","dlTxt","sendCv"].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener("click",()=>setTimeout(()=>askHelpful("cv"),1500))});
+["zOfficial","zOfficialCv"].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener("click",()=>setTimeout(()=>askHelpful("z83"),2500))});
+
+/* Remove everything Amathuba saved on this device (for shared phones and computers) */
+$("#wipeAll").onclick=function(){
+  if(!this.dataset.armed){this.dataset.armed="1";this.textContent="Tap again to delete your CV, applications, Z83 answers and all other saved details";setTimeout(()=>{delete this.dataset.armed;this.textContent="Clear all my data from this phone"},5000);return}
+  try{Object.keys(localStorage).filter(k=>/^(amathuba-|izibusiso-)/.test(k)).forEach(k=>localStorage.removeItem(k));sessionStorage.clear()}catch(e){}
+  location.reload();
+};
 })();
 
 
@@ -1835,6 +1881,7 @@ $("#posterBtn").onclick=async()=>{
   const s=document.createElement("script");s.async=true;s.src="https://gc.zgo.at/count.js";
   s.setAttribute("data-goatcounter",`https://${code}.goatcounter.com/count`);document.head.appendChild(s);
   const count=name=>{try{if(window.goatcounter&&window.goatcounter.count)window.goatcounter.count({path:name,title:name,event:true})}catch(e){}};
+  window.amathubaCount=count;
   const IDS={dlPdf:"cv-downloaded",sendCv:"cv-sent",pasteGo:"cv-pasted",clGen:"cover-letter-written",zOfficial:"z83-filled",zOfficialCv:"z83-and-cv-filled",
     zPdf:"z83-answer-sheet",scamGo:"scam-check",posterBtn:"poster-downloaded",shareApp:"shared-app",shareMore:"shared-app",trSave:"application-saved",impYes:"cv-replaced"};
   document.addEventListener("click",e=>{const el=e.target.closest("button,a");if(!el)return;
