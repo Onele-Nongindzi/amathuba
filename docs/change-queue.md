@@ -20,3 +20,4 @@ New requests land here first and ship in batches. Estimates are reviewer minutes
 | C-14 | 2026-11-25 | Maile TK (FRM-12) | Each line of skills stays its own line on the CV, grouped or not | 5 | Low | — | Ready for release 1.1 |
 | C-15 | 2026-11-25 | Maile TK (EDU-02) | Clearer hint: “put each course on its own line” | 2 | Low | — | Ready for release 1.1 |
 | C-16 | 2026-11-25 | Maile TK (CV-03, CV-05) | Offer different summary wordings; live word count under the summary | 30 | Low | — | Queued |
+| C-17 | 2026-11-26 | Onele (CV check must fix errors) | CV check: “Fix what I can” rewrites duties to start with action words and writes or shortens the summary; “Fix it” or “Show me” on every red item; fairer action-word check; natural casing in generated summaries | 20 | Low | — | Ready for release 1.2 |

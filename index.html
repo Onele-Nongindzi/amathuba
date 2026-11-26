@@ -197,6 +197,9 @@ a.trackbtn{text-decoration:none;display:inline-block}
 .fieldmsg{color:var(--bad);font-size:.85rem;margin:4px 0 0;min-height:0}
 .fieldmsg:empty{display:none}
 input.invalid{border-color:var(--bad)}
+.fixbtn{font:inherit;font-size:.82rem;font-weight:700;margin-left:6px;padding:2px 10px;border-radius:20px;border:1px solid var(--brand);background:var(--paper);color:var(--brand);cursor:pointer}
+.flash{animation:flash 1.6s ease-out 1}@keyframes flash{0%{box-shadow:0 0 0 4px var(--gold)}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion:reduce){.flash{animation:none;outline:3px solid var(--gold)}}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);
   padding:10px 16px;border-radius:10px;font-size:.92rem;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
 .toast.show{opacity:1}
@@ -326,7 +329,8 @@ input.invalid{border-color:var(--bad)}
 
   <div class="score">
     <div class="dial" id="dial" style="--p:0"><span id="scoreNum">0%</span></div>
-    <div><h3 style="margin-bottom:4px">CV check</h3><ul class="checks" id="checks"></ul></div>
+    <div><h3 style="margin-bottom:4px">CV check</h3><ul class="checks" id="checks"></ul>
+      <button class="btn small" type="button" id="fixAll" hidden style="margin-top:10px">Fix what I can</button><p class="hint" id="fixNote" aria-live="polite" style="margin:8px 0 0"></p></div>
   </div>
 
   <fieldset><legend>Match a job advert <small style="font-weight:400">(optional)</small></legend>
@@ -669,19 +673,24 @@ function fillQual(){
 $("#qual").addEventListener("change",()=>{S.qual=$("#qual").value;save()});
 $("#level").addEventListener("change",fillQual);
 fillQual();
+/* lower-case the first letter inside a sentence, but keep names like Microsoft Excel, IT or isiXhosa */
+function midCase(s){s=String(s||"").trim();if(!s)return s;const w=s.split(/\s+/)[0].replace(/[^\w]/g,"");
+  const KEEP=/^(microsoft|excel|word|powerpoint|outlook|google|english|afrikaans|isi[a-z]+|sesotho|sepedi|setswana|siswati|tshivenda|xitsonga|java[a-z]*|python|react|node|sql|html[0-9]*|css[0-9]*|aws|azure|linkedin|pastel|sage|sap)$/i;
+  if(KEEP.test(w)||/^[A-Z0-9]{2,}$/.test(w)||/[A-Z]/.test(w.slice(1)))return s;
+  return s[0].toLowerCase()+s.slice(1)}
 $("#suggest").onclick=()=>{
   if(S.level===""&&!skillsArr().length&&!(S.target||"").trim()&&!S.exp.some(e=>e.title)){
     $("#suggestMsg").textContent="First add your highest education, a skill or the job you want, so the summary is about you.";$("#level").focus();return}
   $("#suggestMsg").textContent="";
-  const lvl=S.level!==""&&+S.level>=2?LEVELS[+S.level]:"";
+  const lvl=S.level!==""&&+S.level>=2?({2:"matric",3:"certificate",4:"diploma",5:"degree",6:"postgraduate degree"})[+S.level]:"";
   const sk=skillsArr().slice(0,3);
   const tgt=S.target||"an entry-level role";
   const parts=[];
-  parts.push(`Reliable and motivated ${lvl?lvl+" holder":"job seeker"} ${S.location?"from "+S.location+" ":""}${qualName()&&qualName()!=="Not sure yet"?(+S.level>=3?"qualified in ":"with an interest in ")+qualName():"open to a range of roles"}.`);
-  if(sk.length)parts.push(`Skilled in ${sk.join(", ").replace(/, ([^,]*)$/," and $1")}.`);
-  if(S.exp.some(e=>e.title))parts.push(`Experienced as ${S.exp.find(e=>e.title).title.replace(/^(.)/,c=>c.toLowerCase())}, working well with people and under pressure.`);
+  parts.push(`Reliable and motivated ${lvl?lvl+" holder":"job seeker"} ${S.location?"from "+S.location+" ":""}${qualName()&&qualName()!=="Not sure yet"?(+S.level>=3?"qualified in ":"with an interest in ")+midCase(qualName()):"open to a range of roles"}.`);
+  if(sk.length)parts.push(`Skilled in ${sk.map(midCase).join(", ").replace(/, ([^,]*)$/," and $1")}.`);
+  if(S.exp.some(e=>e.title)){const jt=S.exp.find(e=>e.title).title.trim();parts.push(`Experienced as ${/^[aeiou]/i.test(jt)?"an":"a"} ${jt.toLowerCase()===jt?jt:jt.split(" ").map(w=>/^[A-Z][a-z]/.test(w)?w.toLowerCase():w).join(" ")}, working well with people and under pressure.`)}
   else parts.push("Quick to learn, punctual and comfortable working in a team.");
-  parts.push(`Looking for a position as ${/^[aeiou]/i.test(tgt)?"an":"a"} ${tgt.replace(/^an? /i,"")} where I can grow and contribute.`);
+  parts.push(S.target&&S.target.trim()?`Looking for a position as ${/^[aeiou]/i.test(tgt)?"an":"a"} ${tgt.replace(/^an? /i,"")} where I can grow and contribute.`:"Looking for an entry-level role where I can grow and contribute.");
   S.summary=parts.join(" ");$("#summary").value=S.summary;save();toast("Summary added. Edit it so it sounds like you.");
 };
 
@@ -718,21 +727,28 @@ function asText(){
 
 /* Checks */
 const ACTION=/^(served|handled|managed|led|helped|assisted|organised|organized|built|created|developed|taught|cared|cleaned|sold|trained|supported|prepared|planned|answered|filed|captured|repaired|installed|cooked|delivered|maintained|processed|coordinated|supervised|improved|designed|wrote|resolved|operated|achieved|completed|grew|raised|volunteered|ran|kept|checked|counted|guided|mentored)/i;
+function isActionLine(d){const w=(String(d).trim().match(/^[A-Za-z’']+/)||[""])[0].toLowerCase();
+  if(!w)return false;if(ACTION.test(w))return true;
+  const PAST=["built","led","ran","taught","sold","wrote","kept","made","did","got","gave","took","held","met","set","put","sent","spent","found","understood","told","paid","won","chose","drove","spoke","oversaw","brought","bought"];
+  if(PAST.includes(w))return true;
+  if(w.length>=5&&/ed$/.test(w)&&!["need","needed","speed","bed"].includes(w))return true;
+  if(w.length>=6&&/ing$/.test(w)&&!["morning","evening","nothing","something","anything","everything","building","wedding","clothing","housing","training"].includes(w))return true;
+  return false}
 function checks(){
   const words=S.summary.trim().split(/\s+/).filter(Boolean).length;
   const duties=S.exp.flatMap(e=>lines(e.duties));
   const L=[
-    [!!S.name.trim(),"Your full name is at the top"],
-    [validEmail(S.email),S.email.trim()?(validEmail(S.email)?"A working email address is included":"Check your email address (for example name@gmail.com)"):"Add an email address. No email yet? You can create one free at Gmail or Outlook"],
-    [validPhone(S.phone),S.phone.trim()&&!validPhone(S.phone)?"Check your phone number (for example 071 234 5678)":"A South African phone number is included"],
-    [datesOk(),datesOk()?"Every job ends after it starts":"One of your jobs ends before it starts. Check the dates"],
-    [words>=25&&words<=90,words<25?"Summary is too short (aim for 25 to 90 words)":words>90?"Summary is too long (aim for 25 to 90 words)":"Summary is a good length"],
-    [skillsArr().length>=5,"At least 5 skills listed"],
-    [S.exp.some(e=>e.title||e.org),"At least one work or volunteer experience"],
-    [S.exp.filter(e=>e.title||e.org).every(e=>e.start),"Every experience has dates"],
-    [duties.length>0&&duties.filter(d=>ACTION.test(d)).length>=Math.ceil(duties.length/2),"Most duties start with action words (served, helped, managed…)"],
-    [S.edu.some(e=>e.qual),"Education is filled in"],
-    [!/\[[^\]]*\]/.test(asText()),/\[[^\]]*\]/.test(asText())?"Replace the [example] parts with your own details":"No example text left in your CV"],
+    [!!S.name.trim(),"Your full name is at the top","name"],
+    [validEmail(S.email),S.email.trim()?(validEmail(S.email)?"A working email address is included":"Check your email address (for example name@gmail.com)"):"Add an email address. No email yet? You can create one free at Gmail or Outlook","email"],
+    [validPhone(S.phone),S.phone.trim()&&!validPhone(S.phone)?"Check your phone number (for example 071 234 5678)":"A South African phone number is included","phone"],
+    [datesOk(),datesOk()?"Every job ends after it starts":"One of your jobs ends before it starts. Check the dates","dates"],
+    [words>=25&&words<=90,words<25?"Summary is too short (aim for 25 to 90 words)":words>90?"Summary is too long (aim for 25 to 90 words)":"Summary is a good length","summary"],
+    [skillsArr().length>=5,"At least 5 skills listed","skills"],
+    [S.exp.some(e=>e.title||e.org),"At least one work or volunteer experience","exp"],
+    [S.exp.filter(e=>e.title||e.org).every(e=>e.start),"Every experience has dates","expdates"],
+    [duties.length>0&&duties.filter(isActionLine).length>=Math.ceil(duties.length/2),"Most duties start with action words (served, helped, managed…)","action"],
+    [S.edu.some(e=>e.qual),"Education is filled in","edu"],
+    [!/\[[^\]]*\]/.test(asText()),/\[[^\]]*\]/.test(asText())?"Replace the [example] parts with your own details":"No example text left in your CV","brackets"],
   ];
   return L;
 }
@@ -755,7 +771,9 @@ $("#advert").addEventListener("input",renderKW);
 function renderCV(){
   const L=checks();const ok=L.filter(x=>x[0]).length;const p=Math.round(ok/L.length*100);
   $("#dial").style.setProperty("--p",p);$("#scoreNum").textContent=p+"%";
-  $("#checks").innerHTML=L.map(([g,t])=>`<li class="${g?"ok":"no"}">${esc(t)}</li>`).join("");
+  $("#checks").innerHTML=L.map(([g,t,k])=>`<li class="${g?"ok":"no"}">${esc(t)}${!g&&FIXES[k]?` <button type="button" class="fixbtn" data-fix="${k}">${FIXES[k].auto&&FIXES[k].auto()?"Fix it":"Show me"}</button>`:""}</li>`).join("");
+  const bad=L.filter(x=>!x[0]).length;$("#fixAll").hidden=!bad;
+  document.querySelectorAll("[data-fix]").forEach(b=>b.onclick=()=>runFix(b.dataset.fix));
   const m=model();
   let h=`<p class="nm">${esc(m.name||"Your name")}</p><p>${esc(m.contact||"Phone | Email | Town")}</p>`;
   m.sec.forEach(s=>{h+=`<h4>${esc(s.h)}</h4>`;
@@ -1890,6 +1908,57 @@ function markDates(){document.querySelectorAll("#expList .item").forEach((it,i)=
   it.querySelectorAll('[data-f="start"],[data-f="end"]').forEach(x=>x.classList.toggle("invalid",!ok))})}
 $("#expList").addEventListener("input",e=>{if(e.target.matches('[data-f="start"],[data-f="end"]'))setTimeout(markDates,0)});
 const _drawLists=drawLists;drawLists=function(){_drawLists();markDates()};markDates();
+
+/* CV check: fix what can be fixed, and take people straight to what they must change */
+function fixDuty(d,current){
+  let s=String(d).trim(),orig=s;
+  s=s.replace(/^(i\s+(was|am|have been)\s+|i\s+|was\s+|my\s+)/i,"");
+  s=s.replace(/^(my\s+)?(main\s+)?(duties|tasks|responsibilities)\s*(included|include|were|are)?\s*:?\s*/i,"");
+  let m;
+  if((m=s.match(/^(responsible for|in charge of|tasked with|duty to|helped with)\s+([a-z’']+ing)\b(.*)$/i))){s=pastOf(m[2])+m[3]}
+  else if((m=s.match(/^(responsible for)\s+(.*)$/i))){s="Managed "+m[2]}
+  else if((m=s.match(/^(in charge of)\s+(.*)$/i))){s="Led "+m[2]}
+  else if(!current&&(m=s.match(/^([A-Za-z]{3,}ing)\b(.*)$/))&&isActionLine(m[1])){s=pastOf(m[1])+m[2]}
+  s=s.replace(/[;,.]+$/,"");if(s)s=s[0].toUpperCase()+s.slice(1);
+  return s;
+}
+function autoFixDuties(){let n=0;
+  S.exp.forEach(e=>{const cur=/present|current/i.test(e.end||"");const L2=lines(e.duties).map(d=>{const f=fixDuty(d,cur);if(f!==d)n++;return f});e.duties=L2.join("\n")});
+  return n}
+function goTo(el){show("details");setTimeout(()=>{if(!el)return;el.scrollIntoView({behavior:"smooth",block:"center"});el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),1700);if(el.focus)el.focus({preventScroll:true})},60)}
+const field=s=>document.querySelector(s);
+const expItem=(i,f)=>{const it=document.querySelectorAll("#expList .item")[i];return it?it.querySelector(`[data-f="${f}"]`):null};
+const hasDetails=()=>S.level!==""||skillsArr().length||(S.target||"").trim()||S.exp.some(e=>e.title);
+function shortenSummary(){const sent=S.summary.trim().split(/(?<=[.!?])\s+/);let out=[];for(const s_ of sent){const t=out.concat([s_]).join(" ");if(t.split(/\s+/).length>90)break;out.push(s_)}
+  S.summary=out.length?out.join(" "):S.summary.trim().split(/\s+/).slice(0,90).join(" ");}
+const FIXES={
+  name:{go:()=>goTo(field("#name"))},
+  email:{go:()=>goTo(field("#email"))},
+  phone:{go:()=>goTo(field("#phone"))},
+  dates:{go:()=>{const i=S.exp.findIndex(e=>!jobDatesOk(e));goTo(expItem(i,"end"))}},
+  summary:{auto:()=>{const w=S.summary.trim().split(/\s+/).filter(Boolean).length;return w>90||(w<25&&hasDetails())},
+    run:()=>{const w=S.summary.trim().split(/\s+/).filter(Boolean).length;if(w>90){shortenSummary();return "Shortened your summary to under 90 words."}
+      if(hasDetails()){S.summary="";$("#suggest").click();return "Wrote a summary from your details. Read it and make it sound like you."}},
+    go:()=>goTo(field("#summary"))},
+  skills:{go:()=>goTo(field("#skills"))},
+  exp:{go:()=>goTo(field(".firstjob"))},
+  expdates:{go:()=>{const i=S.exp.findIndex(e=>(e.title||e.org)&&!e.start);goTo(expItem(i,"start"))}},
+  action:{auto:()=>S.exp.some(e=>{const cur=/present|current/i.test(e.end||"");return lines(e.duties).some(d=>fixDuty(d,cur)!==d)}),
+    run:()=>{const n=autoFixDuties();return n?`Rewrote ${n} dut${n===1?"y":"ies"} to start with an action word.`:""},
+    go:()=>{const i=S.exp.findIndex(e=>lines(e.duties).some(d=>!isActionLine(d)));goTo(expItem(i,"duties"));toast("Start each line with an action word, like Served, Helped, Managed or Built.")}},
+  edu:{go:()=>goTo(document.querySelector("#eduList [data-f=qual]"))},
+  brackets:{go:()=>{const el=[...document.querySelectorAll("#details input, #details textarea")].find(x=>/\[[^\]]*\]/.test(x.value));goTo(el)}},
+};
+function runFix(k){const f=FIXES[k];if(!f)return;
+  if(f.auto&&f.auto()&&f.run){const msg=f.run();save();document.querySelectorAll("[data-k]").forEach(el=>el.value=S[el.dataset.k]||"");drawLists();renderCV();
+    const still=checks().find(x=>x[2]===k&&!x[0]);$("#fixNote").textContent=msg||"";if(still&&f.go){f.go()}else toast(msg||"Fixed.");return}
+  if(f.go)f.go()}
+$("#fixAll").onclick=()=>{const done=[];
+  ["action","summary"].forEach(k=>{const f=FIXES[k];if(f.auto&&f.auto()){const m=f.run();if(m)done.push(m)}});
+  save();document.querySelectorAll("[data-k]").forEach(el=>el.value=S[el.dataset.k]||"");drawLists();renderCV();
+  const left=checks().filter(x=>!x[0]);
+  $("#fixNote").textContent=(done.length?done.join(" "):"Nothing could be fixed automatically.")+(left.length?` ${left.length} thing${left.length===1?"":"s"} still need${left.length===1?"s":""} you: tap “Show me” next to ${left.length===1?"it":"each one"}.`:" Your CV check is complete!");
+};
 })();
 
 
