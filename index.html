@@ -194,6 +194,9 @@ a.trackbtn{text-decoration:none;display:inline-block}
 .firstjob{background:var(--brand-pale);border-radius:10px;padding:10px 12px;margin:0 0 14px;font-size:.93rem}
 .helpful{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0;padding:10px 12px;border-radius:10px;background:var(--brand-pale);font-size:.93rem}
 .helpful[hidden]{display:none}
+.fieldmsg{color:var(--bad);font-size:.85rem;margin:4px 0 0;min-height:0}
+.fieldmsg:empty{display:none}
+input.invalid{border-color:var(--bad)}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);
   padding:10px 16px;border-radius:10px;font-size:.92rem;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
 .toast.show{opacity:1}
@@ -247,8 +250,8 @@ a.trackbtn{text-decoration:none;display:inline-block}
   <fieldset><legend>Contact</legend>
     <div class="grid">
       <div><label for="name">Full name</label><input id="name" data-k="name" autocomplete="name"></div>
-      <div><label for="phone">Phone number</label><input id="phone" data-k="phone" inputmode="tel" autocomplete="tel"></div>
-      <div><label for="email">Email address <small>(needed for most jobs)</small></label><input id="email" data-k="email" type="email" autocomplete="email"></div>
+      <div><label for="phone">Phone number</label><input id="phone" data-k="phone" inputmode="tel" autocomplete="tel" aria-describedby="phoneMsg"><p class="fieldmsg" id="phoneMsg" aria-live="polite"></p></div>
+      <div><label for="email">Email address <small>(needed for most jobs)</small></label><input id="email" data-k="email" type="email" autocomplete="email" aria-describedby="emailMsg"><p class="fieldmsg" id="emailMsg" aria-live="polite"></p></div>
       <div><label for="location">Town / area</label><input id="location" data-k="location" placeholder="Lusikisiki, Eastern Cape"></div>
       <div><label for="licence">Driver’s licence <small>(optional)</small></label><input id="licence" data-k="licence" placeholder="e.g. Code 10"></div>
       <div><label for="languages">Languages</label><input id="languages" data-k="languages" placeholder="isiXhosa, English"></div>
@@ -283,6 +286,7 @@ a.trackbtn{text-decoration:none;display:inline-block}
     <div style="margin-top:12px"><label for="summary">Short summary <small>(3 to 4 sentences)</small></label>
       <textarea id="summary" data-k="summary" placeholder="Who you are, what you’re good at, and the job you want."></textarea>
       <div class="row-actions"><button class="btn ghost small" type="button" id="suggest">Write one for me</button></div>
+      <p class="fieldmsg" id="suggestMsg" aria-live="polite" style="text-align:right"></p>
     </div>
     <div><label for="skills">Skills <small>(separate with commas; optional groups on new lines)</small></label>
       <textarea id="skills" data-k="skills" placeholder="Customer service, Microsoft Word, Cash handling, Teamwork&#10;or in groups:&#10;Front-End: React.js, Tailwind CSS&#10;Back-End: Node.js, SQL"></textarea></div>
@@ -304,7 +308,7 @@ a.trackbtn{text-decoration:none;display:inline-block}
 
   <fieldset><legend>Extra</legend>
     <div class="grid">
-      <div><label for="certs">Courses and certificates <small>(one per line)</small></label><textarea id="certs" data-k="certs" placeholder="First Aid Level 1, 2025"></textarea></div>
+      <div><label for="certs">Courses and certificates <small>(put each course on its own line)</small></label><textarea id="certs" data-k="certs" placeholder="First Aid Level 1, 2025"></textarea></div>
       <div><label for="refs">References</label><textarea id="refs" data-k="refs" placeholder="Available on request"></textarea></div>
     </div>
   </fieldset>
@@ -604,7 +608,11 @@ function show(id){
   document.querySelectorAll("section[role=tabpanel]").forEach(s=>s.hidden=s.id!==id);
   if(id==="cv"){renderCV();renderCLFrom()} if(id==="opps"){renderOpps();renderLocal();loadLocal()} if(id==="track"){renderTrack();renderDocs()} if(id==="z83")renderZ83(); if(id==="iv")renderIV();
   window.scrollTo({top:0});
+  if(location.hash.slice(1)!==id){if(id==="details"&&!location.hash)return;location.hash=id}
 }
+const STEPS=["details","cv","opps","track","z83","iv","scam"];
+window.addEventListener("hashchange",()=>{const id=location.hash.slice(1)||"details";if(STEPS.includes(id))show(id)});
+setTimeout(()=>{const id=location.hash.slice(1);if(STEPS.includes(id)&&id!=="details")show(id)},0);
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>show(b.dataset.tab));
 document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>show(b.dataset.go));
 
@@ -662,6 +670,9 @@ $("#qual").addEventListener("change",()=>{S.qual=$("#qual").value;save()});
 $("#level").addEventListener("change",fillQual);
 fillQual();
 $("#suggest").onclick=()=>{
+  if(S.level===""&&!skillsArr().length&&!(S.target||"").trim()&&!S.exp.some(e=>e.title)){
+    $("#suggestMsg").textContent="First add your highest education, a skill or the job you want, so the summary is about you.";$("#level").focus();return}
+  $("#suggestMsg").textContent="";
   const lvl=S.level!==""&&+S.level>=2?LEVELS[+S.level]:"";
   const sk=skillsArr().slice(0,3);
   const tgt=S.target||"an entry-level role";
@@ -682,7 +693,7 @@ function model(){
   const contact=[S.phone,S.email,S.location].filter(Boolean).join(" | ");
   const sec=[];
   if(S.summary.trim())sec.push({h:"PROFESSIONAL SUMMARY",p:[S.summary.trim()]});
-  const sg=skillGroups(); if(sg.length)sec.push({h:"SKILLS",g:sg.some(x=>x[0])?sg:[["",skillsArr().join(", ")]]});
+  const sg=skillGroups(); if(sg.length)sec.push({h:"SKILLS",g:sg});
   const ex=S.exp.filter(e=>e.title||e.org);
   if(ex.length)sec.push({h:"WORK EXPERIENCE",items:ex.map(e=>({t:[e.title,e.org].filter(Boolean).join(", "),m:[e.place,[e.start,e.end].filter(Boolean).join(" – ")].filter(Boolean).join(" | "),b:lines(e.duties)}))});
   const ed=S.edu.filter(e=>e.qual||e.inst);
@@ -712,8 +723,9 @@ function checks(){
   const duties=S.exp.flatMap(e=>lines(e.duties));
   const L=[
     [!!S.name.trim(),"Your full name is at the top"],
-    [/^\S+@\S+\.\S+$/.test(S.email.trim()),"A working email address is included"],
-    [S.phone.replace(/\D/g,"").length>=10,"A 10-digit phone number is included"],
+    [validEmail(S.email),S.email.trim()?(validEmail(S.email)?"A working email address is included":"Check your email address (for example name@gmail.com)"):"Add an email address. No email yet? You can create one free at Gmail or Outlook"],
+    [validPhone(S.phone),S.phone.trim()&&!validPhone(S.phone)?"Check your phone number (for example 071 234 5678)":"A South African phone number is included"],
+    [datesOk(),datesOk()?"Every job ends after it starts":"One of your jobs ends before it starts. Check the dates"],
     [words>=25&&words<=90,words<25?"Summary is too short (aim for 25 to 90 words)":words>90?"Summary is too long (aim for 25 to 90 words)":"Summary is a good length"],
     [skillsArr().length>=5,"At least 5 skills listed"],
     [S.exp.some(e=>e.title||e.org),"At least one work or volunteer experience"],
@@ -1857,6 +1869,27 @@ $("#wipeAll").onclick=function(){
   try{Object.keys(localStorage).filter(k=>/^(amathuba-|izibusiso-)/.test(k)).forEach(k=>localStorage.removeItem(k));sessionStorage.clear()}catch(e){}
   location.reload();
 };
+
+/* Field checks: South African phone numbers, email addresses and job dates */
+function validPhone(s){const d=String(s||"").replace(/[\s()\-]/g,"");return /^0[1-9]\d{8}$/.test(d)||/^\+?27[1-9]\d{8}$/.test(d)}
+function validEmail(s){return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(s||"").trim())}
+function fieldCheck(id,ok,msg){const el=$("#"+id),m=$("#"+id+"Msg");const v=el.value.trim();const bad=v&&!ok(v);m.textContent=bad?msg:"";el.classList.toggle("invalid",!!bad)}
+const PHONE_MSG="This doesn’t look like a South African number. Use 10 digits starting with 0 (071 234 5678) or +27 (+27 71 234 5678).";
+const EMAIL_MSG="Check this email address. It should look like name@gmail.com.";
+["phone","email"].forEach(id=>{const el=$("#"+id);const run=()=>fieldCheck(id,id==="phone"?validPhone:validEmail,id==="phone"?PHONE_MSG:EMAIL_MSG);
+  el.addEventListener("blur",run);el.addEventListener("input",()=>{if($("#"+id+"Msg").textContent)run()});if(el.value)run()});
+function ymOf(s,isEnd){s=String(s||"").trim();if(!s)return null;if(/present|current|now|date/i.test(s))return isEnd?1e9:null;
+  const M={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+  const y=s.match(/\b(19|20)\d{2}\b/);if(!y)return null;const m=(s.match(/[a-z]{3}/i)||[""])[0].toLowerCase();
+  const n=s.match(/^(\d{1,2})[\/\-](\d{4})$/);const mm=n?(+n[1]-1):(m in M?M[m]:(isEnd?11:0));return (+y[0])*12+mm}
+function jobDatesOk(e){const a=ymOf(e.start,false),b=ymOf(e.end,true);return a===null||b===null||b>=a}
+function datesOk(){return S.exp.every(jobDatesOk)}
+function markDates(){document.querySelectorAll("#expList .item").forEach((it,i)=>{const e=S.exp[i];if(!e)return;
+  let m=it.querySelector(".datemsg");if(!m){m=document.createElement("p");m.className="fieldmsg datemsg";m.setAttribute("aria-live","polite");it.querySelector('[data-f="end"]').after(m)}
+  const ok=jobDatesOk(e);m.textContent=ok?"":"The end date is before the start date. Check the dates.";
+  it.querySelectorAll('[data-f="start"],[data-f="end"]').forEach(x=>x.classList.toggle("invalid",!ok))})}
+$("#expList").addEventListener("input",e=>{if(e.target.matches('[data-f="start"],[data-f="end"]'))setTimeout(markDates,0)});
+const _drawLists=drawLists;drawLists=function(){_drawLists();markDates()};markDates();
 })();
 
 
